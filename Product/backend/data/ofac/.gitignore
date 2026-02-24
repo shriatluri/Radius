@@ -1,0 +1,5 @@
+# OFAC SDN data files — downloaded at runtime, not committed to git
+sdn_advanced.xml
+sdn_advanced.xml.tmp
+address_index.json
+meta.json

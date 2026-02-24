@@ -1,0 +1,43 @@
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist/
+build/
+
+# Version control
+.git
+.gitignore
+
+# Node / frontend build artifacts
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/.env*
+
+# Test artifacts
+tests/
+.pytest_cache
+.coverage
+.coveragerc
+htmlcov/
+requirements-dev.txt
+
+# Local database and exports
+*.db
+exports/
+
+# Dev / docs
+docs/
+scripts/
+*.md
+CLAUDE.md
+
+# IDE
+.vscode
+.idea
+*.swp

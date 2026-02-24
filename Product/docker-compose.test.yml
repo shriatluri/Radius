@@ -1,0 +1,10 @@
+# Test override for docker-compose.yml
+# Replaces the OFAC named volume with a pre-seeded fixture directory so the
+# smoke test never hits Treasury.gov and always has known sanctioned addresses.
+services:
+  api:
+    environment:
+      ENVIRONMENT: development
+      OFAC_UPDATE_INTERVAL_HOURS: "876000"
+    volumes:
+      - ./tests/fixtures/ofac:/app/data/ofac

@@ -1,0 +1,11 @@
+[coverage:run]
+# ofac.py contains the OFAC SDN XML download, parsing, and caching code.
+# These paths require network access to Treasury.gov and a full 80 MB XML file
+# to execute, making them unsuitable for unit/integration tests. They are
+# covered via mocks (OFACScreener with _loaded=True) throughout the test suite.
+omit =
+    */app/services/ofac.py
+
+[coverage:report]
+omit =
+    */app/services/ofac.py

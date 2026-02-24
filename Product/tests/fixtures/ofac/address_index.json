@@ -1,0 +1,23 @@
+{
+  "0x8589427373d6d84e98730d7795d8f6f8731fda16": {
+    "name": "TORNADO CASH",
+    "sdn_id": "36158",
+    "currency": "ETH",
+    "program": "CYBER2",
+    "address": "0x8589427373D6D84E98730D7795d8F6f8731FDA16"
+  },
+  "0x098b716b8aaf21512996dc57eb0615e2383e2f96": {
+    "name": "LAZARUS GROUP",
+    "sdn_id": "21731",
+    "currency": "ETH",
+    "program": "DPRK3",
+    "address": "0x098B716B8Aaf21512996dC57EB0615e2383E2f96"
+  },
+  "0xa0e1c89ef1a489c9c7de96311ed5ce5d32c20e4b": {
+    "name": "LAZARUS GROUP",
+    "sdn_id": "21731",
+    "currency": "ETH",
+    "program": "DPRK3",
+    "address": "0xa0e1c89Ef1a489c9C7dE96311Ed5CE5D32c20E4b"
+  }
+}
