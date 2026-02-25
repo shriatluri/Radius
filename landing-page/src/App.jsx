@@ -70,19 +70,76 @@ function Navbar() {
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
+function RadarBackground() {
+  const rings = [100, 200, 300, 400, 500]
+  const size = 560
+
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+      style={{ opacity: 0.09 }}
+    >
+      <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+        {/* Concentric rings */}
+        {rings.map((d) => (
+          <div
+            key={d}
+            className="absolute rounded-full border border-white"
+            style={{
+              width: d,
+              height: d,
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+        ))}
+
+        {/* Crosshairs */}
+        <div className="absolute bg-white" style={{ width: '100%', height: 1, top: '50%', left: 0 }} />
+        <div className="absolute bg-white" style={{ width: 1, height: '100%', left: '50%', top: 0 }} />
+
+        {/* Center dot */}
+        <div
+          className="absolute rounded-full bg-white"
+          style={{ width: 5, height: 5, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        />
+
+        {/* Rotating sweep */}
+        <div
+          className="radar-sweep absolute inset-0 rounded-full"
+          style={{
+            background: `conic-gradient(
+              from 0deg,
+              transparent 0deg,
+              rgba(255,255,255,0.03) 20deg,
+              rgba(255,255,255,0.08) 45deg,
+              rgba(255,255,255,0.25) 59deg,
+              rgba(255,255,255,0.6) 60deg,
+              transparent 61deg,
+              transparent 360deg
+            )`,
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function Hero() {
   return (
-    <section className="pt-32 pb-24 px-6">
-      <div className="max-w-5xl mx-auto flex flex-col items-center text-center">
+    <section className="relative pt-32 pb-24 px-6 overflow-hidden">
+      <RadarBackground />
+      <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center text-center">
         <div className="inline-flex items-center gap-2 border border-[#2a1045] bg-[#0f0020] text-[#a78bfa] text-xs font-medium px-3 py-1.5 rounded-full mb-10">
           <span className="w-1.5 h-1.5 rounded-full bg-[#7c3aed]" />
           GENIUS Act · FATF Travel Rule · OFAC
         </div>
 
         <h1 className="text-5xl sm:text-6xl md:text-[72px] font-bold text-white leading-[1.05] tracking-tight mb-7 max-w-4xl">
-          Stablecoin payments,{' '}
+          The paper trail your
           <br className="hidden sm:block" />
-          audit-ready by default.
+          blockchain never had.
         </h1>
 
         <p className="text-lg text-[#777] max-w-xl leading-relaxed mb-10">
