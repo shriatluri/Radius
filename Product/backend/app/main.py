@@ -17,6 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api import api_router
 from app.core import RadiusError
+from app.core.auth import generate_api_key
 from app.core.config import settings
 from app.core.errors import radius_error_handler
 from app.core.logging import setup_logging, set_request_id
@@ -93,12 +94,60 @@ async def startup_event():
     if settings.use_database:
         init_db()
         logger.info("Database initialized")
+        if settings.environment == "development":
+            _seed_dev_key()
 
     if settings.rate_limit_enabled:
         logger.info(f"Rate limiting enabled: {settings.rate_limit_tokens} req/burst")
 
     # Schedule OFAC refresh check without blocking startup
     asyncio.create_task(_startup_ofac_refresh())
+
+
+def _seed_dev_key() -> None:
+    """
+    Seed a developer API key on first startup in development.
+
+    Only runs when:
+    - ENVIRONMENT=development
+    - The api_keys table is empty (first boot or wiped DB)
+
+    The key value comes from the DEV_API_KEY env var. If that isn't set,
+    a random key is generated and printed to stdout so you can copy it.
+    This means the key value is never hardcoded in source.
+    """
+    from app.db.database import SessionLocal
+    from app.db.repositories import APIKeyRepository
+
+    db = SessionLocal()
+    try:
+        repo = APIKeyRepository(db)
+        existing = repo.list_by_business("dev")
+        if existing:
+            return  # already seeded, nothing to do
+
+        # Use the configured key or generate a fresh one
+        if settings.dev_api_key:
+            plaintext = settings.dev_api_key
+            from app.core.auth import hash_api_key
+            key_hash = hash_api_key(plaintext)
+        else:
+            plaintext, key_hash = generate_api_key(prefix="sk_test_")
+
+        repo.create(
+            key_hash=key_hash,
+            key_prefix="sk_test_",
+            business_id="dev",
+            name="Dev seed key (auto-generated)",
+            scopes="transactions:write,transactions:read,reports:read,admin:all",
+        )
+
+        logger.info(
+            f"Dev API key seeded — copy this, it won't be shown again: {plaintext}",
+            extra={"event": "dev_key_seeded", "api_key": plaintext},
+        )
+    finally:
+        db.close()
 
 
 async def _startup_ofac_refresh() -> None:

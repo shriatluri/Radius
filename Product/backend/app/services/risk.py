@@ -152,7 +152,7 @@ def score_transaction(
         extra={
             "event": "risk_scored",
             "score": final_score,
-            "level": level,
+            "risk_level": level,
             "factors": required_actions,
             "amount": str(amt),
             "chain": chain,

@@ -35,6 +35,11 @@ class Settings:
     # CORS
     allowed_origins: list = None  # type: ignore[assignment]
 
+    # Development seed key — only used when ENVIRONMENT=development and no DB keys exist.
+    # Set via DEV_API_KEY env var. If unset, a random key is generated and printed at startup.
+    # Has no effect in production.
+    dev_api_key: str = ""
+
     # API
     api_version: str = "0.2.0"
 
@@ -56,6 +61,7 @@ class Settings:
         return cls(
             environment=os.getenv("ENVIRONMENT", "development").lower(),
             allowed_origins=allowed_origins,
+            dev_api_key=os.getenv("DEV_API_KEY", ""),
             use_database=os.getenv("USE_DATABASE", "true").lower() == "true",
             database_url=os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}"),
             rate_limit_enabled=os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true",
