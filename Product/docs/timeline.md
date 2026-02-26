@@ -247,8 +247,9 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
   - `sk_live_...` — manually provisioned by Radius team after review (Option A)
   - `Business.plan` field: "sandbox" (default) | "live"; `upgrade_to_live()` in BusinessRepository
 
-- [ ] **Key rotation endpoint** `POST /v1/api-keys/rotate`
-  - Invalidates old key, issues new one
+- [x] **Key rotation endpoint** `POST /v1/api-keys/{key_id}/rotate`
+  - Revokes old key, issues new one with same prefix/scopes/name
+  - 404 if key doesn't belong to authenticated business (no tenant enumeration)
   - Returns new plaintext key once
 
 - [ ] **Wire a Tally/Typeform form to the signup endpoint**
