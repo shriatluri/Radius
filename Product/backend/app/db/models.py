@@ -36,6 +36,26 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
+class Business(Base):
+    """
+    A company that has signed up to use Radius.
+
+    Each Business gets a random ID (biz_a3f9c2) as its primary key.
+    The human-readable name and email live here — not on the APIKey rows.
+    One Business can have many APIKeys (sandbox + live, multiple environments).
+
+    plan: "sandbox" (default) or "live" (manually upgraded by Radius team after review).
+    """
+    __tablename__ = "businesses"
+
+    id = Column(String(20), primary_key=True)           # e.g. biz_a3f9c2
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    intended_use = Column(Text, nullable=True)
+    plan = Column(String(20), nullable=False, default="sandbox")  # sandbox | live
+    created_at = Column(DateTime, nullable=False, default=func.now())
+
+
 class APIKey(Base):
     """
     API keys for authentication.

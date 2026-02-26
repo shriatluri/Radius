@@ -40,6 +40,10 @@ class Settings:
     # Has no effect in production.
     dev_api_key: str = ""
 
+    # Email (Resend) — used for welcome emails on signup
+    resend_api_key: str = ""
+    from_email: str = "noreply@getradius.com"
+
     # API
     api_version: str = "0.2.0"
 
@@ -62,6 +66,8 @@ class Settings:
             environment=os.getenv("ENVIRONMENT", "development").lower(),
             allowed_origins=allowed_origins,
             dev_api_key=os.getenv("DEV_API_KEY", ""),
+            resend_api_key=os.getenv("RESEND_API_KEY", ""),
+            from_email=os.getenv("FROM_EMAIL", "hello@getradius.com"),
             use_database=os.getenv("USE_DATABASE", "true").lower() == "true",
             database_url=os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}"),
             rate_limit_enabled=os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true",

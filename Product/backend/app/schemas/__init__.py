@@ -33,6 +33,7 @@ from .api_keys import (
     APIKeyListResponse,
     APIKeyRevokeResponse,
 )
+from .signup import SignupRequest, SignupResponse, TallyWebhookPayload
 
 __all__ = [
     # Common
@@ -62,4 +63,8 @@ __all__ = [
     "APIKeyInfo",
     "APIKeyListResponse",
     "APIKeyRevokeResponse",
+    # Signup
+    "SignupRequest",
+    "SignupResponse",
+    "TallyWebhookPayload",
 ]

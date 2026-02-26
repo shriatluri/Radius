@@ -8,6 +8,7 @@ from .database import get_db, init_db, engine, Base, SessionLocal
 from .models import (
     APIKey,
     AuditRecord,
+    Business,
     RateLimitBucket,
     Transaction,
     TravelRuleProof,
@@ -16,6 +17,7 @@ from .models import (
 from .repositories import (
     APIKeyRepository,
     AuditRecordRepository,
+    BusinessRepository,
     TransactionRepository,
     TravelRuleProofRepository,
     WalletVerificationRepository,
@@ -31,6 +33,7 @@ __all__ = [
     # Models
     "APIKey",
     "AuditRecord",
+    "Business",
     "RateLimitBucket",
     "Transaction",
     "TravelRuleProof",
@@ -38,6 +41,7 @@ __all__ = [
     # Repositories
     "APIKeyRepository",
     "AuditRecordRepository",
+    "BusinessRepository",
     "TransactionRepository",
     "TravelRuleProofRepository",
     "WalletVerificationRepository",

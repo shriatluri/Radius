@@ -335,6 +335,56 @@ class TravelRuleProofRepository:
         ).first()
 
 
+class BusinessRepository:
+    """Repository for Business operations."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(
+        self,
+        name: str,
+        email: str,
+        intended_use: Optional[str] = None,
+    ) -> models.Business:
+        """Create a new business. Raises ValueError if email already registered."""
+        existing = self.get_by_email(email)
+        if existing:
+            raise ValueError(f"Email {email} is already registered")
+
+        business = models.Business(
+            id=_generate_id("biz"),
+            name=name,
+            email=email.lower().strip(),
+            intended_use=intended_use,
+            plan="sandbox",
+        )
+        self.db.add(business)
+        self.db.commit()
+        self.db.refresh(business)
+        return business
+
+    def get_by_email(self, email: str) -> Optional[models.Business]:
+        """Look up a business by email address."""
+        return self.db.query(models.Business).filter(
+            models.Business.email == email.lower().strip()
+        ).first()
+
+    def get_by_id(self, business_id: str) -> Optional[models.Business]:
+        """Look up a business by its ID."""
+        return self.db.query(models.Business).filter(
+            models.Business.id == business_id
+        ).first()
+
+    def upgrade_to_live(self, business_id: str) -> bool:
+        """Manually upgrade a business from sandbox to live plan."""
+        result = self.db.query(models.Business).filter(
+            models.Business.id == business_id
+        ).update({"plan": "live"})
+        self.db.commit()
+        return result > 0
+
+
 class APIKeyRepository:
     """Repository for API key operations."""
 
