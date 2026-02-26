@@ -23,15 +23,15 @@ class SignupRequest(BaseModel):
 
 class TallyField(BaseModel):
     """A single field from a Tally form response."""
-    key: str
+    key: Optional[str] = None
     label: str
-    type: str
+    type: Optional[str] = None
     value: Any
 
 
 class TallyWebhookData(BaseModel):
     """The data object inside a Tally webhook payload."""
-    responseId: str
+    responseId: Optional[str] = None
     fields: List[TallyField]
 
 
