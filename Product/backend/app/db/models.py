@@ -11,7 +11,6 @@ Key Design Decisions:
 4. Indexes on frequently queried columns - business_id, status, created_at
 """
 
-from datetime import datetime
 import uuid
 
 from sqlalchemy import (

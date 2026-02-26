@@ -496,9 +496,9 @@ def check_travel_rule(
             self_hosted_verification_needed = True
             required_actions.append("verify_self_hosted_wallet_ownership")
             if orig_is_self_hosted:
-                notes_parts.append(f"Originator wallet requires ownership verification")
+                notes_parts.append("Originator wallet requires ownership verification")
             if benef_is_self_hosted:
-                notes_parts.append(f"Beneficiary wallet requires ownership verification")
+                notes_parts.append("Beneficiary wallet requires ownership verification")
 
     # Determine final status
     if threshold_exceeded:

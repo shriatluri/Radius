@@ -8,9 +8,9 @@ in development or a properly-scoped live key in production.
 import asyncio
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
-from app.core.auth import APIKeyInfo, check_scope, require_api_key
+from app.core.auth import check_scope, require_api_key
 from app.core.config import settings
 from app.services.ofac import get_screener
 from app.services.sanctions import get_sanctions_status

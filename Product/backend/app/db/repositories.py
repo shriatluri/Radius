@@ -372,7 +372,7 @@ class APIKeyRepository:
         return self.db.query(models.APIKey).filter(
             and_(
                 models.APIKey.key_hash == key_hash,
-                models.APIKey.is_active == True,
+                models.APIKey.is_active.is_(True),
             )
         ).first()
 

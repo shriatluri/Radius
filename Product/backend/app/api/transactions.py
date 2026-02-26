@@ -361,7 +361,7 @@ def list_transactions(
             continue
         if risk_level and txn["risk_level"] != risk_level:
             continue
-        if business_id and payload.get("business_id") != business_id:
+        if auth.business_id and payload.get("business_id") != auth.business_id:
             continue
 
         audit = STORE.audit_records.get(txn["audit_record_id"])
