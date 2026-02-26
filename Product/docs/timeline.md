@@ -223,89 +223,134 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 
 ## Phase 3: Make It Sellable (Weeks 5-8)
 
-### 3.1 Multi-Source Sanctions
-> **Why:** OFAC is US-only. EU/UK customers need EU consolidated list and UN Security Council list.
+> Reordered to unblock the first customer as fast as possible:
+> 3.1 developer signup → 3.2 multi-source sanctions → 3.3 dashboard login → 3.4 SDKs → 3.5 landing page → 3.6 SOC 2
+>
+> Rationale: nothing else matters if there's no door for a customer to walk through.
+> Sanctions expansion unlocks EU/UK market before we invest in SDK/dashboard polish.
+> Dashboard login (human auth) comes after sanctions because it's the more complex build.
+> SDKs are a multiplier on customers you already have, not a way to get the first one.
+
+### 3.1 Developer Signup — API Key Provisioning
+> **Why:** This is the only gap that blocks a real customer from using the product today.
+> Without it, every other improvement is invisible — no one can reach it.
+> Ship the lightweight path first: signup endpoint + Tally form. Full self-serve UI comes later.
+
+- [ ] **Signup endpoint** `POST /v1/signup`
+  - Accepts: `business_name`, `email`, `intended_use`
+  - Creates a `Business` record + generates `sk_sandbox_...` key
+  - Returns plaintext key once (never stored, only hash kept)
+  - Email field stored for future comms; no email verification needed at this stage
+
+- [ ] **Key types: sandbox vs live**
+  - `sk_sandbox_...` — rate-limited, isolated data, safe for testing
+  - `sk_live_...` — production; only created after manual review (at first) or upgrade flow (later)
+  - Prefix drives behavior: sandbox keys get tighter rate limits and can't export live data
+
+- [ ] **Key rotation endpoint** `POST /v1/api-keys/rotate`
+  - Invalidates old key, issues new one
+  - Returns new plaintext key once
+
+- [ ] **Wire a Tally/Typeform form to the signup endpoint**
+  - Form fields: company name, email, how they plan to use Radius
+  - On submit → POST to `/v1/signup` → show the generated key once
+  - This is the "Get API Key" CTA destination for the landing page
+
+### 3.2 Multi-Source Sanctions
+> **Why:** OFAC covers US-designated entities. EU and UK customers are legally required
+> to screen against the EU consolidated list and UN Security Council list respectively.
+> Without these, a "passed" result from Radius is incomplete for non-US deals —
+> a liability, not a feature.
+> OpenSanctions aggregates 40+ lists in one API so we get coverage without parsing
+> three separate XML feeds ourselves.
 
 - [ ] **Add OpenSanctions API integration**
-  - OpenSanctions aggregates OFAC + EU + UN + 40 other lists
-  - Free tier available for startups
-  - Add as alternative provider in `SANCTIONS_PROVIDER` config
-  - Fallback chain: OpenSanctions → OFAC local → cached data
+  - OpenSanctions aggregates OFAC + EU + UN + 40 other lists in one API
+  - Free tier available for startups (self-hosted also available)
+  - Add as `"opensanctions"` option in `SANCTIONS_PROVIDER` config
+  - Fallback chain: OpenSanctions → OFAC local → hardcoded fallback list
 
-- [ ] **Add EU consolidated sanctions list**
+- [ ] **Add EU consolidated sanctions list (direct)**
   - Source: `https://webgate.ec.europa.eu/fsd/fsf`
-  - Parse and merge into sanctions screener
+  - Parse and merge into sanctions screener as standalone alternative to OpenSanctions
 
-- [ ] **Add UN Security Council list**
+- [ ] **Add UN Security Council list (direct)**
   - Source: `https://scsanctions.un.org/resources/xml/en/consolidated.xml`
-  - Parse and merge into sanctions screener
+  - Parse and merge into sanctions screener as standalone alternative to OpenSanctions
 
-### 3.2 Self-Serve Onboarding
-> **Why:** Two distinct user types need access — developers integrating the API, and business users (compliance officers, finance teams) reviewing transactions in the dashboard. Current system has no auth path for the second type.
+### 3.3 Dashboard Login — Human Auth
+> **Why:** Compliance officers, finance teams, and auditors need to log into the dashboard
+> with email + password. API keys don't fit this workflow — they're not developers.
+> This is the second user type, and it's what unlocks Radius being useful beyond just
+> the initial integration.
+> Use an auth provider (Clerk recommended) rather than building auth from scratch —
+> building auth correctly takes months and introduces serious security risk.
 
-**User type 1 — Developer / integrator**
-The company's backend calls Radius programmatically. API key in `X-API-Key` header. Never touches the dashboard.
+- [ ] **Integrate Clerk (or Auth0/Supabase Auth)**
+  - Clerk handles: email+password login, session management, MFA, JWT issuance
+  - Frontend: replace the "paste API key" screen with a proper login page
+  - Backend: validate Clerk JWT on dashboard-facing endpoints, extract `business_id` from claims
 
-**User type 2 — Compliance officer / finance person**
-Logs into the dashboard to review flagged transactions, pull audit records, export CSVs. Needs human auth — API keys don't fit this workflow.
+- [ ] **Scope dashboard access to business_id**
+  - After login, user can only see their own business's transactions
+  - Already enforced at the data layer — just needs the auth layer wired up
 
-- [ ] **Developer onboarding: API key provisioning**
-  - Signup form → generates `sk_sandbox_...` key, shown once
-  - Store SHA-256 hash in DB; return plaintext to user once at creation
-  - Key types: `sandbox` (rate-limited, test data) and `live` (production)
-  - Key rotation: `POST /v1/api-keys/rotate`
-  - Can start with Typeform/Tally → manual provisioning, automate later
-
-- [ ] **Dashboard login (human auth)**
-  - Email + password login for the dashboard (compliance officers, finance, auditors)
-  - Separate from API keys — humans log in with credentials, not `X-API-Key`
-  - Session-based or JWT; scoped to their `business_id`
-  - Simplest path: use an auth provider (Auth0, Clerk, Supabase Auth) rather than building from scratch
-
-- [ ] **Key management in dashboard**
-  - View active keys, their scopes, and last-used timestamp
+- [ ] **Key management UI in dashboard**
+  - View active API keys, their scopes, and last-used timestamp
   - Create new keys with specific scopes (write-only for payment system, read-only for auditors)
   - Revoke keys
 
-### 3.3 SDKs
-> **Why:** Developer experience. One `pip install radius` instead of raw HTTP calls.
+### 3.4 SDKs
+> **Why:** Reduces developer integration time from days to hours.
+> A `pip install radius-python` is a much lower barrier than reading API docs and
+> writing HTTP calls from scratch. SDKs are a multiplier on customers you already have.
+> Build only after the API is stable — changing an endpoint after publishing breaks SDK consumers.
 
-- [ ] **Python SDK**
-  - Package: `radius-python`
+- [ ] **Python SDK** (`radius-python`)
   - Typed models matching API schemas
   - Methods: `client.check(transaction)`, `client.annotate(tx_id, tx_hash)`, `client.audit(tx_id)`
-  - Error handling with typed exceptions
+  - Typed exceptions: `SanctionsError`, `RateLimitError`, `AuthError`
   - Publish to PyPI
 
-- [ ] **TypeScript SDK**
-  - Package: `@radius/sdk`
+- [ ] **TypeScript SDK** (`@radius/sdk`)
   - TypeScript types matching API schemas
   - Same method signatures as Python SDK
+  - Works in Node.js and browser environments
   - Publish to npm
 
-### 3.4 Landing Page
-> **Why:** People need to find and understand the product.
+### 3.5 Landing Page
+> **Why:** The landing page exists and is deployed. The missing pieces are the pricing
+> table and the "Get API Key" CTA — the CTA was blocked on 3.1 (signup endpoint),
+> which is now done. Wire it up.
 
-- [ ] **Simple one-page site**
-  - What it does (payment attestation, not "compliance")
-  - How it works (3-step flow diagram)
-  - Pricing table (Free / Starter / Growth / Enterprise)
-  - "Get API Key" CTA → signup flow
-  - Link to API docs (FastAPI auto-generated at `/docs`)
+- [ ] **Add pricing table**
+  - Free / Starter ($99/mo) / Growth ($499/mo) / Enterprise (custom)
+  - Show per-check pricing and monthly caps per tier
 
-### 3.5 SOC 2 Prep
-> **Why:** Enterprise customers require it. Takes 3-6 months so start early.
+- [ ] **Wire "Get API Key" CTA to signup flow**
+  - Button links to Tally form (built in 3.1) or the hosted signup page
+  - Remove any placeholder CTAs
+
+- [ ] **Link to API docs**
+  - FastAPI auto-generates docs at `/docs` — just needs a visible link
+
+### 3.6 SOC 2 Prep
+> **Why:** Enterprise customers (>$20M/month stablecoin volume) require SOC 2 Type I
+> before signing a contract. The audit takes 3-6 months from engagement to report.
+> Starting now means you could have it in hand when you close your first enterprise deal.
+> This runs in parallel with 3.1-3.5 — it's mostly vendor engagement + process docs, not code.
 
 - [ ] **Engage SOC 2 auditor**
-  - Get quotes from Vanta, Drata, or Secureframe (automated platforms)
+  - Get quotes from Vanta, Drata, or Secureframe (automated compliance platforms)
   - Typical cost: $10K-$30K for Type I
+  - Vanta/Drata dramatically reduce prep time by auto-collecting evidence from GitHub, AWS, etc.
 
 - [ ] **Implement required controls**
-  - Access management: who can access production, MFA required
-  - Encryption: data at rest (DB encryption), in transit (HTTPS only)
-  - Incident response plan (documented procedure)
-  - Change management: all production changes via CI/CD, no manual deploys
-  - Audit logging: already have audit_records table, ensure completeness
+  - Access management: who can access production, MFA required for all team members
+  - Encryption: data at rest (DB encryption), in transit (HTTPS only — enforced by Railway/Vercel)
+  - Incident response plan (documented procedure in Notion or Google Docs)
+  - Change management: all production changes via CI/CD (already done in 2.1), no manual deploys
+  - Audit logging: `audit_records` table already exists — verify completeness of coverage
 
 ---
 
