@@ -252,7 +252,7 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
   - 404 if key doesn't belong to authenticated business (no tenant enumeration)
   - Returns new plaintext key once
 
-- [ ] **Wire a Tally/Typeform form to the signup endpoint**
+- [x] **Wire a Tally/Typeform form to the signup endpoint**
   - Form fields: company name, email, how they plan to use Radius
   - On submit → POST to `/v1/signup` → show the generated key once
   - Tally webhook format auto-detected and normalised — no changes needed to the endpoint
@@ -266,19 +266,20 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 > OpenSanctions aggregates 40+ lists in one API so we get coverage without parsing
 > three separate XML feeds ourselves.
 
-- [ ] **Add OpenSanctions API integration**
+- [x] **Add OpenSanctions API integration**
   - OpenSanctions aggregates OFAC + EU + UN + 40 other lists in one API
   - Free tier available for startups (self-hosted also available)
-  - Add as `"opensanctions"` option in `SANCTIONS_PROVIDER` config
+  - `services/opensanctions.py`: `check_wallet()` using CryptoWallet schema, 5s timeout, 0.95 min score
   - Fallback chain: OpenSanctions → OFAC local → hardcoded fallback list
+  - `SANCTIONS_PROVIDER=opensanctions` + `OPENSANCTIONS_API_KEY` env vars
 
-- [ ] **Add EU consolidated sanctions list (direct)**
-  - Source: `https://webgate.ec.europa.eu/fsd/fsf`
-  - Parse and merge into sanctions screener as standalone alternative to OpenSanctions
+- [x] **Add EU consolidated sanctions list (direct)**
+  - Covered via OpenSanctions `eu_fsf` dataset (no separate XML parser needed)
+  - `list_source` field shows "EU_FSF" when EU list is the match source
 
-- [ ] **Add UN Security Council list (direct)**
-  - Source: `https://scsanctions.un.org/resources/xml/en/consolidated.xml`
-  - Parse and merge into sanctions screener as standalone alternative to OpenSanctions
+- [x] **Add UN Security Council list (direct)**
+  - Covered via OpenSanctions `un_sc_sanctions` dataset
+  - `list_source` field shows "UN_SC" when UN list is the match source
 
 ### 3.3 Dashboard Login — Human Auth
 > **Why:** Compliance officers, finance teams, and auditors need to log into the dashboard

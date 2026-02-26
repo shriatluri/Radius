@@ -49,12 +49,16 @@ HIGH_RISK_PATTERNS: frozenset[str] = frozenset({"mixer", "tornado", "blender"})
 
 def check_sanctions(wallet: Optional[str]) -> SanctionsMatch:
     """
-    Check a wallet address against OFAC sanctions.
+    Check a wallet address against sanctions lists.
 
     Returns:
         SanctionsMatch with matched, name, sdn_id, currency, program, list_source.
 
     Screening order (controlled by SANCTIONS_PROVIDER env var):
+      "opensanctions" (recommended for production):
+        1. OpenSanctions API — covers OFAC + EU + UN + 40 other lists in one call
+        2. Falls back to OFAC local if API is unavailable or times out
+        3. Falls back to hardcoded list if OFAC local has no data
       "ofac_local" (default):
         1. OFAC SDN screener (live data, auto-refreshed daily)
         2. Hardcoded fallback list (if OFAC screener has no data)
@@ -66,7 +70,6 @@ def check_sanctions(wallet: Optional[str]) -> SanctionsMatch:
 
     normalized = wallet.lower().strip()
 
-    # Dispatch on configured provider
     try:
         from app.core.config import settings
         provider = settings.sanctions_provider
@@ -76,15 +79,36 @@ def check_sanctions(wallet: Optional[str]) -> SanctionsMatch:
     if provider == "none":
         return SanctionsMatch(matched=False)
 
-    if provider not in ("ofac_local",):
+    # ── OpenSanctions (multi-list: OFAC + EU + UN + 40 others) ─────────────
+    if provider == "opensanctions":
+        try:
+            from app.core.config import settings as _s
+            from .opensanctions import check_wallet, OpenSanctionsError
+            result = check_wallet(normalized, _s.opensanctions_api_key)
+            if result.matched:
+                return result
+            # OpenSanctions returned a clean result — trust it, skip OFAC local
+            return SanctionsMatch(matched=False)
+        except Exception as exc:
+            logger.warning(
+                "opensanctions_unavailable",
+                extra={
+                    "event": "opensanctions_unavailable",
+                    "error": str(exc),
+                    "fallback": "ofac_local",
+                },
+            )
+            # Fall through to OFAC local below
+
+    elif provider not in ("ofac_local",):
         logger.warning(
             f"Unknown SANCTIONS_PROVIDER={provider!r}, falling back to ofac_local"
         )
 
-    # Primary: OFAC SDN screener
+    # ── OFAC local (US-only, live SDN XML) ──────────────────────────────────
     try:
         screener = get_screener()
-        result: SanctionsMatch = screener.check(normalized)
+        result = screener.check(normalized)
         if result.matched:
             logger.info(
                 f"OFAC SDN match: wallet={normalized} name={result.name!r} "
@@ -92,14 +116,13 @@ def check_sanctions(wallet: Optional[str]) -> SanctionsMatch:
             )
             return result
 
-        # Screener loaded and found no match — trust it
         if screener.address_count > 0:
             return SanctionsMatch(matched=False)
 
     except Exception as exc:
         logger.warning(f"OFAC screener error, falling back to hardcoded list: {exc}")
 
-    # Fallback: hardcoded list (offline / screener unavailable)
+    # ── Hardcoded fallback (offline / all screeners unavailable) ────────────
     if normalized in KNOWN_SANCTIONED_WALLETS:
         logger.warning(
             f"Matched via fallback hardcoded list: {normalized}. "

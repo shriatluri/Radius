@@ -48,7 +48,8 @@ class Settings:
     api_version: str = "0.2.0"
 
     # Sanctions screening
-    sanctions_provider: str = "ofac_local"  # "ofac_local" | "opensanctions" (future)
+    sanctions_provider: str = "ofac_local"  # "ofac_local" | "opensanctions" | "none"
+    opensanctions_api_key: str = ""         # Required when sanctions_provider=opensanctions
     ofac_sdn_url: str = "https://www.treasury.gov/ofac/downloads/sanctions/1.0/sdn_advanced.xml"
     ofac_update_interval_hours: int = 24
     ofac_data_dir: Path = field(default_factory=lambda: DEFAULT_OFAC_DATA_DIR)
@@ -75,6 +76,7 @@ class Settings:
             rate_limit_refill_rate=float(os.getenv("RATE_LIMIT_REFILL_RATE", "1.67")),
             api_version=os.getenv("API_VERSION", "0.2.0"),
             sanctions_provider=os.getenv("SANCTIONS_PROVIDER", "ofac_local"),
+            opensanctions_api_key=os.getenv("OPENSANCTIONS_API_KEY", ""),
             ofac_sdn_url=os.getenv(
                 "OFAC_SDN_URL",
                 "https://www.treasury.gov/ofac/downloads/sanctions/1.0/sdn_advanced.xml",
