@@ -158,13 +158,13 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 > **Why:** Automated testing and deployment. No manual "did you run the tests?" conversations.
 > **Files:** `.github/workflows/ci.yml`
 
-- [ ] **GitHub Actions: test + lint**
+- [x] **GitHub Actions: test + lint**
   - Trigger: push to main, PRs to main
   - Steps: checkout → setup Python 3.12 → install deps → `ruff check` → `pytest`
   - Cache pip dependencies for speed
   - Add `ruff` as dev dependency if not present
 
-- [ ] **GitHub Actions: Docker build**
+- [x] **GitHub Actions: Docker build**
   - After tests pass: build Docker image
   - Tag with commit SHA and `latest`
   - Push to GitHub Container Registry (ghcr.io) on main branch merges
@@ -173,18 +173,19 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
   - Deploy to Railway, Render, or Fly.io on merge to main
   - Environment variables set via platform secrets
   - Health check URL: `/v1/health`
+  - Note: workflow built, pending Railway project + RAILWAY_DEPLOY_WEBHOOK secret
 
 ### 2.2 Structured Logging
 > **Why:** Audit trail for compliance decisions. You need to prove what happened and when.
 > **Files:** `backend/app/core/logging.py`, `backend/app/main.py`
 
-- [ ] **Add JSON structured logging**
+- [x] **Add JSON structured logging**
   - Create `backend/app/core/logging.py`
   - Use Python `structlog` or `python-json-logger`
   - Every log line: `{timestamp, request_id, business_id, level, message, ...}`
   - Add request ID middleware: generate UUID per request, attach to all logs
 
-- [ ] **Log compliance decisions**
+- [x] **Log compliance decisions**
   - Log on every `POST /v1/transactions/ingest`: `{action: "sanctions_check", wallet, result, sdn_match}`
   - Log on every risk score: `{action: "risk_scored", score, level, factors}`
   - Log on every Travel Rule check: `{action: "travel_rule_check", jurisdiction, threshold_exceeded}`
