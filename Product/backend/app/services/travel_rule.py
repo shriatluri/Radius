@@ -13,10 +13,13 @@ References:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 class Jurisdiction(str, Enum):
@@ -524,6 +527,19 @@ def check_travel_rule(
     elif applicable_jurisdiction == Jurisdiction.CH:
         notes_parts.append("Swiss rules aggregate linked transactions within 30 days")
 
+    logger.info(
+        "travel_rule_check",
+        extra={
+            "event": "travel_rule_check",
+            "status": status,
+            "jurisdiction": applicable_jurisdiction.value,
+            "threshold_exceeded": threshold_exceeded,
+            "applicable_threshold": str(applicable_rule.threshold_amount),
+            "threshold_currency": applicable_rule.threshold_currency,
+            "amount_usd": str(amount_usd),
+            "self_hosted_verification_needed": self_hosted_verification_needed,
+        },
+    )
     return TravelRuleResult(
         status=status,
         threshold_exceeded=threshold_exceeded,

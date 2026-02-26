@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core import APIKeyInfo, require_api_key, RadiusError, RateLimitResult
 from app.core.auth import check_scope
+from app.core.logging import set_business_id
 from app.core.config import settings
 from app.db import get_db, TransactionRepository, AuditRecordRepository
 from app.schemas import (
@@ -68,6 +69,9 @@ def ingest_transaction(
 
     # Override business_id with authenticated business for security
     payload.business_id = auth.business_id
+
+    # Stamp all log lines for this request with the tenant's business_id
+    set_business_id(auth.business_id)
 
     if settings.use_database:
         return _ingest_transaction_db(payload, db)

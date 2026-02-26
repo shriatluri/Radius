@@ -5,3 +5,4 @@ requests
 sqlalchemy
 psycopg2-binary
 python-dotenv
+python-json-logger>=2.0

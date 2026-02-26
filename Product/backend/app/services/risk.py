@@ -10,11 +10,14 @@ Evaluates transactions based on:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
 from .sanctions import check_sanctions, is_high_risk_wallet
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -63,6 +66,28 @@ def score_transaction(
         match = check_sanctions(wallet)
         if match.matched:
             reason = _build_reason(match)
+            logger.warning(
+                "sanctions_check",
+                extra={
+                    "event": "sanctions_check",
+                    "wallet": wallet,
+                    "result": "failed",
+                    "sdn_name": match.name,
+                    "sdn_id": match.sdn_id,
+                    "sdn_program": match.program,
+                    "list_source": match.list_source,
+                },
+            )
+            logger.warning(
+                "transaction_blocked",
+                extra={
+                    "event": "transaction_blocked",
+                    "reason": "sanctioned_wallet",
+                    "wallet": wallet,
+                    "sdn_name": match.name,
+                    "sdn_program": match.program,
+                },
+            )
             return RiskResult(
                 score=100,
                 level="critical",
@@ -74,6 +99,14 @@ def score_transaction(
                 list_source=match.list_source,
                 sanctions_reason=reason,
             )
+        logger.info(
+            "sanctions_check",
+            extra={
+                "event": "sanctions_check",
+                "wallet": wallet,
+                "result": "passed",
+            },
+        )
 
     # ----------------------------------------------------------------
     # 2. High-risk wallet patterns (flagged, not blocked)
@@ -113,8 +146,20 @@ def score_transaction(
     else:
         level = "low"
 
+    final_score = min(score, 100)
+    logger.info(
+        "risk_scored",
+        extra={
+            "event": "risk_scored",
+            "score": final_score,
+            "level": level,
+            "factors": required_actions,
+            "amount": str(amt),
+            "chain": chain,
+        },
+    )
     return RiskResult(
-        score=min(score, 100),
+        score=final_score,
         level=level,
         sanctions_result="passed",
         required_actions=required_actions,

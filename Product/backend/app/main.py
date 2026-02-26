@@ -7,19 +7,39 @@ Main application entry point.
 import asyncio
 import logging
 import os
+import secrets
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api import api_router
 from app.core import RadiusError
 from app.core.config import settings
 from app.core.errors import radius_error_handler
+from app.core.logging import setup_logging, set_request_id
 from app.db import init_db
 
+setup_logging()
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Request ID middleware
+# Generates a unique ID for every request and stores it in a contextvar so
+# every log line emitted during that request is stamped with the same ID.
+# Also sends it back to the caller as X-Request-Id so they can reference it.
+# ---------------------------------------------------------------------------
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = f"req_{secrets.token_hex(6)}"
+        set_request_id(request_id)
+        response = await call_next(request)
+        response.headers["X-Request-Id"] = request_id
+        return response
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -28,6 +48,7 @@ app = FastAPI(
     description="Payment attestation infrastructure. Turn stablecoin transfers into audit-ready financial records.",
 )
 
+app.add_middleware(RequestIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
