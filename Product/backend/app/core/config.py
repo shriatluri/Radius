@@ -32,6 +32,9 @@ class Settings:
     rate_limit_tokens: int = 100  # Max burst
     rate_limit_refill_rate: float = 1.67  # ~100/min
 
+    # CORS
+    allowed_origins: list = None  # type: ignore[assignment]
+
     # API
     api_version: str = "0.2.0"
 
@@ -47,8 +50,12 @@ class Settings:
         ofac_data_dir_str = os.getenv("OFAC_DATA_DIR", "")
         ofac_data_dir = Path(ofac_data_dir_str) if ofac_data_dir_str else DEFAULT_OFAC_DATA_DIR
 
+        raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
+        allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+
         return cls(
             environment=os.getenv("ENVIRONMENT", "development").lower(),
+            allowed_origins=allowed_origins,
             use_database=os.getenv("USE_DATABASE", "true").lower() == "true",
             database_url=os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}"),
             rate_limit_enabled=os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true",

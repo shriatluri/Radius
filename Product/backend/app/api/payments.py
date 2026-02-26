@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core import APIKeyInfo, require_api_key, RadiusError
+from app.core.auth import check_scope
 from app.core.config import settings
 from app.db import get_db, TransactionRepository
 from app.schemas import PaymentAnnotateRequest, PaymentAnnotateResponse
@@ -21,6 +22,7 @@ def annotate_payment(
     payload: PaymentAnnotateRequest,
     auth: APIKeyInfo = Depends(require_api_key),
     db: Session = Depends(get_db),
+    _: None = Depends(check_scope("transactions:write")),
 ) -> PaymentAnnotateResponse:
     """
     Annotate a transaction with on-chain execution data.

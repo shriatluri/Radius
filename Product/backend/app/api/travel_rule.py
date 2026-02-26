@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Query
 
 from app.core import APIKeyInfo, require_api_key
+from app.core.auth import check_scope
 from app.schemas import TravelRuleTransmitRequest, TravelRuleTransmitResponse
 from app.services import (
     check_travel_rule,
@@ -29,6 +30,7 @@ def _new_id(prefix: str) -> str:
 def travel_rule_transmit(
     payload: TravelRuleTransmitRequest,
     auth: APIKeyInfo = Depends(require_api_key),
+    _: None = Depends(check_scope("transactions:write")),
 ) -> TravelRuleTransmitResponse:
     """Transmit Travel Rule data to counterparty VASP."""
     proof_id = _new_id("trp")
@@ -43,6 +45,7 @@ def travel_rule_transmit(
 @router.get("/check")
 def check_travel_rule_requirements(
     auth: APIKeyInfo = Depends(require_api_key),
+    _: None = Depends(check_scope("transactions:read")),
     amount: str = Query(..., description="Transaction amount in USD"),
     originator_jurisdiction: Optional[str] = Query(None, description="ISO 3166-1 alpha-2 country code"),
     beneficiary_jurisdiction: Optional[str] = Query(None, description="ISO 3166-1 alpha-2 country code"),
@@ -84,6 +87,7 @@ def check_travel_rule_requirements(
 @router.get("/jurisdictions")
 def list_travel_rule_jurisdictions(
     auth: APIKeyInfo = Depends(require_api_key),
+    _: None = Depends(check_scope("transactions:read")),
 ):
     """
     List all supported jurisdictions with their Travel Rule requirements.

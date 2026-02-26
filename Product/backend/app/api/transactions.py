@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.core import APIKeyInfo, require_api_key, RadiusError, RateLimitResult
+from app.core.auth import check_scope
 from app.core.config import settings
 from app.db import get_db, TransactionRepository, AuditRecordRepository
 from app.schemas import (
@@ -47,6 +48,7 @@ def ingest_transaction(
     auth: APIKeyInfo = Depends(require_api_key),
     db: Session = Depends(get_db),
     rate_limit: RateLimitResult = Depends(apply_rate_limit),
+    _: None = Depends(check_scope("transactions:write")),
 ) -> TransactionIngestResponse:
     """
     Ingest a transaction for compliance checking.
@@ -311,6 +313,7 @@ def list_transactions(
     risk_level: str | None = None,
     limit: int = 50,
     offset: int = 0,
+    _: None = Depends(check_scope("transactions:read")),
 ) -> TransactionListResponse:
     """
     List transactions with optional filtering.
@@ -395,6 +398,7 @@ def annotate_payment(
     payload: PaymentAnnotateRequest,
     auth: APIKeyInfo = Depends(require_api_key),
     db: Session = Depends(get_db),
+    _: None = Depends(check_scope("transactions:write")),
 ) -> PaymentAnnotateResponse:
     """
     Annotate a transaction with on-chain execution data.
@@ -446,6 +450,7 @@ def get_audit_record(
     transaction_id: str,
     auth: APIKeyInfo = Depends(require_api_key),
     db: Session = Depends(get_db),
+    _: None = Depends(check_scope("transactions:read")),
 ) -> AuditRecord:
     """
     Get the audit record for a specific transaction.

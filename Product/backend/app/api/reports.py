@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core import APIKeyInfo, require_api_key
+from app.core.auth import check_scope
 from app.core.config import settings
 from app.db import get_db, AuditRecordRepository
 from app.storage import STORE
@@ -28,6 +29,7 @@ def export_report(
     format: str = Query("csv", regex="^(csv|json)$"),
     from_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     to_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    _: None = Depends(check_scope("reports:read")),
 ):
     """
     Export audit records as CSV or JSON.

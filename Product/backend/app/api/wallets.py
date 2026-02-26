@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core import APIKeyInfo, require_api_key
+from app.core.auth import check_scope
 from app.core.config import settings
 from app.db import get_db, WalletVerificationRepository
 from app.schemas import WalletVerifyRequest, WalletVerifyResponse
@@ -27,6 +28,7 @@ def verify_wallet(
     payload: WalletVerifyRequest,
     auth: APIKeyInfo = Depends(require_api_key),
     db: Session = Depends(get_db),
+    _: None = Depends(check_scope("transactions:write")),
 ) -> WalletVerifyResponse:
     """
     Verify wallet ownership via signed message.
