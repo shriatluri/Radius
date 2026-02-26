@@ -8,7 +8,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+import logging
+
 from app.core import APIKeyInfo, require_api_key, generate_api_key, RadiusError
+from app.core.auth import check_scope
+
+logger = logging.getLogger(__name__)
 from app.db import get_db, APIKeyRepository
 from app.schemas import (
     APIKeyCreateRequest,
@@ -96,6 +101,70 @@ def list_api_keys(
     ]
 
     return APIKeyListResponse(keys=keys, total=len(keys))
+
+
+@router.post("/{key_id}/rotate", response_model=APIKeyCreateResponse)
+def rotate_api_key(
+    key_id: str,
+    auth: APIKeyInfo = Depends(require_api_key),
+    db: Session = Depends(get_db),
+    _: None = Depends(check_scope("transactions:write")),
+):
+    """
+    Rotate an API key — revoke the old one and issue a new one instantly.
+
+    Why rotation exists: if a key is accidentally exposed (committed to git,
+    logged somewhere, seen by the wrong person), you can invalidate it immediately
+    and replace it without downtime. The new key has the same scopes and prefix
+    as the old one so your integration keeps working after you swap the value.
+
+    Security: you can only rotate keys belonging to your own business_id.
+    Attempting to rotate another tenant's key returns 404 (not 403) — we don't
+    confirm whether a key ID exists outside your account.
+
+    The new plaintext key is returned ONCE. Store it immediately.
+    """
+    repo = APIKeyRepository(db)
+    old_key = repo.get_by_id(key_id)
+
+    # 404 regardless of whether the key exists but belongs to another business —
+    # we don't want to confirm the existence of other tenants' keys.
+    if not old_key or old_key.business_id != auth.business_id:
+        raise RadiusError("key_not_found", f"API key {key_id} not found", 404)
+
+    # Atomically revoke old and create new with same prefix + scopes
+    repo.revoke(key_id)
+
+    plaintext_key, key_hash = generate_api_key(old_key.key_prefix)
+    new_key = repo.create(
+        key_hash=key_hash,
+        key_prefix=old_key.key_prefix,
+        business_id=old_key.business_id,
+        name=old_key.name,
+        scopes=old_key.scopes,
+    )
+
+    logger.info(
+        "api_key_rotated",
+        extra={
+            "event": "api_key_rotated",
+            "old_key_id": key_id,
+            "new_key_id": new_key.id,
+            "business_id": auth.business_id,
+        },
+    )
+
+    return APIKeyCreateResponse(
+        key_id=new_key.id,
+        api_key=plaintext_key,
+        key_prefix=new_key.key_prefix,
+        business_id=new_key.business_id,
+        name=new_key.name,
+        scopes=new_key.scopes,
+        expires_at=new_key.expires_at.isoformat() + "Z" if new_key.expires_at else None,
+        created_at=new_key.created_at.isoformat() + "Z",
+        warning="New key issued. The old key is immediately invalid. Store this key securely — it will not be shown again.",
+    )
 
 
 @router.delete("/{key_id}", response_model=APIKeyRevokeResponse)

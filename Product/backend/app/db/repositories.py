@@ -417,6 +417,12 @@ class APIKeyRepository:
 
         return api_key
 
+    def get_by_id(self, key_id: str) -> Optional[models.APIKey]:
+        """Get an API key by its primary key ID."""
+        return self.db.query(models.APIKey).filter(
+            models.APIKey.id == key_id
+        ).first()
+
     def get_by_hash(self, key_hash: str) -> Optional[models.APIKey]:
         """Get an API key by its hash."""
         return self.db.query(models.APIKey).filter(
