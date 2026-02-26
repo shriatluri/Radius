@@ -236,16 +236,16 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 > Without it, every other improvement is invisible — no one can reach it.
 > Ship the lightweight path first: signup endpoint + Tally form. Full self-serve UI comes later.
 
-- [ ] **Signup endpoint** `POST /v1/signup`
-  - Accepts: `business_name`, `email`, `intended_use`
-  - Creates a `Business` record + generates `sk_sandbox_...` key
-  - Returns plaintext key once (never stored, only hash kept)
-  - Email field stored for future comms; no email verification needed at this stage
+- [x] **Signup endpoint** `POST /v1/signup`
+  - Accepts direct JSON `{ business_name, email, intended_use }` or Tally webhook payload
+  - Creates a `Business` record (id: biz_xxx, name, email, plan: sandbox) + `sk_sandbox_...` key
+  - Returns plaintext key once (only hash stored in DB); 409 on duplicate email
+  - Welcome email sent via Resend with key, business_id, and quickstart steps
 
-- [ ] **Key types: sandbox vs live**
-  - `sk_sandbox_...` — rate-limited, isolated data, safe for testing
-  - `sk_live_...` — production; only created after manual review (at first) or upgrade flow (later)
-  - Prefix drives behavior: sandbox keys get tighter rate limits and can't export live data
+- [x] **Key types: sandbox vs live**
+  - `sk_sandbox_...` — generated at signup, full API access, data isolated by business_id
+  - `sk_live_...` — manually provisioned by Radius team after review (Option A)
+  - `Business.plan` field: "sandbox" (default) | "live"; `upgrade_to_live()` in BusinessRepository
 
 - [ ] **Key rotation endpoint** `POST /v1/api-keys/rotate`
   - Invalidates old key, issues new one
@@ -254,6 +254,7 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 - [ ] **Wire a Tally/Typeform form to the signup endpoint**
   - Form fields: company name, email, how they plan to use Radius
   - On submit → POST to `/v1/signup` → show the generated key once
+  - Tally webhook format auto-detected and normalised — no changes needed to the endpoint
   - This is the "Get API Key" CTA destination for the landing page
 
 ### 3.2 Multi-Source Sanctions
