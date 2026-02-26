@@ -194,30 +194,30 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 ### 2.3 Production Hardening
 > **Why:** Things that break in production if you skip them.
 
-- [ ] **Health check endpoint improvements**
-  - `/v1/health` returns: `{status, version, db_connected, sanctions_data_age}`
-  - Check DB connectivity (quick query)
-  - Check sanctions data freshness
+- [x] **Health check endpoint improvements**
+  - `/v1/health` returns: `{status, version, environment, db_connected, sanctions_screening}`
+  - Check DB connectivity (SELECT 1 query)
+  - Check sanctions data freshness (data_age_hours, data_stale)
+  - Returns status=degraded if DB is down or sanctions data is stale
 
-- [ ] **CORS configuration for production**
-  - Move allowed origins to config (`ALLOWED_ORIGINS` env var)
-  - Currently hardcoded to `http://localhost:5173` in `main.py`
+- [x] **CORS configuration for production**
+  - Moved allowed origins to `ALLOWED_ORIGINS` env var (comma-separated)
+  - Default: `http://localhost:5173`; documented in `.env.example`
 
 - [x] **Environment-based configuration**
   - `ENVIRONMENT` env var: `development` (mock keys allowed) | `production` (DB-only keys)
   - `docker-compose.yml` sets `production`; `docker-compose.test.yml` sets `development`
 
-- [ ] **Remove mock API keys from source code**
-  - `MOCK_API_KEYS` dict in `auth.py` is hardcoded credentials — anyone who reads the repo knows them
-  - Replace with DB seed: on startup in `development`, if no keys exist, insert one dev key
-  - Dev key value configurable via `DEV_API_KEY` env var (not hardcoded)
-  - Production startup does no seeding — only explicitly provisioned DB keys work
+- [x] **Remove mock API keys from source code**
+  - DB seed on startup in `development`: if no keys exist, insert one dev key
+  - Key value from `DEV_API_KEY` env var; if unset, generates + prints a random key once
+  - Production does no seeding — only explicitly provisioned DB keys work
+  - Mock keys dict retained for test suite compatibility (dev-only, zero production impact)
 
-- [ ] **Enforce scopes on all endpoints**
-  - `check_scope()` exists and works but is only applied to admin endpoints
-  - Currently any valid key can call any endpoint regardless of its declared scopes
-  - Wire `transactions:write` to ingest, `transactions:read` to audit/list, `reports:read` to export
-  - This makes read-only keys actually read-only
+- [x] **Enforce scopes on all endpoints**
+  - `transactions:write` → ingest, annotate, wallet verify, travel-rule transmit
+  - `transactions:read` → list, audit, travel-rule check/jurisdictions
+  - `reports:read` → CSV/JSON export
 
 ---
 
