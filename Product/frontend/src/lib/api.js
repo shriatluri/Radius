@@ -1,26 +1,20 @@
 const API_BASE = '/v1';
-const API_KEY_STORAGE = 'radius_api_key';
 
 class ApiClient {
   constructor() {
-    this.apiKey = localStorage.getItem(API_KEY_STORAGE) || null;
+    this._getToken = null;
   }
 
-  setApiKey(key) {
-    this.apiKey = key;
-    if (key) {
-      localStorage.setItem(API_KEY_STORAGE, key);
-    } else {
-      localStorage.removeItem(API_KEY_STORAGE);
-    }
+  /**
+   * Set the token getter function (from Clerk's useAuth().getToken).
+   * Called once when the app mounts with a signed-in user.
+   */
+  setTokenGetter(getToken) {
+    this._getToken = getToken;
   }
 
-  getApiKey() {
-    return this.apiKey;
-  }
-
-  clearApiKey() {
-    this.setApiKey(null);
+  clearTokenGetter() {
+    this._getToken = null;
   }
 
   async request(endpoint, options = {}) {
@@ -29,8 +23,11 @@ class ApiClient {
       ...options.headers,
     };
 
-    if (this.apiKey) {
-      headers['X-API-Key'] = this.apiKey;
+    if (this._getToken) {
+      const token = await this._getToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     }
 
     const url = `${API_BASE}${endpoint}`;
@@ -48,11 +45,15 @@ class ApiClient {
     return response;
   }
 
+  async getMe() {
+    const response = await this.request('/auth/me');
+    return response.json();
+  }
+
   async listTransactions(filters = {}) {
     const params = new URLSearchParams();
 
     if (filters.status) params.append('status', filters.status);
-    if (filters.business_id) params.append('business_id', filters.business_id);
     if (filters.risk_level) params.append('risk_level', filters.risk_level);
     if (filters.limit) params.append('limit', filters.limit);
     if (filters.offset) params.append('offset', filters.offset);
@@ -73,7 +74,6 @@ class ApiClient {
     const params = new URLSearchParams({ format });
 
     if (filters.status) params.append('status', filters.status);
-    if (filters.business_id) params.append('business_id', filters.business_id);
     if (filters.risk_level) params.append('risk_level', filters.risk_level);
     if (filters.start_date) params.append('start_date', filters.start_date);
     if (filters.end_date) params.append('end_date', filters.end_date);
@@ -82,11 +82,9 @@ class ApiClient {
     const response = await this.request(endpoint);
 
     if (format === 'csv') {
-      // For CSV, return blob for download
       const blob = await response.blob();
       return blob;
     } else {
-      // For JSON, return parsed data
       return response.json();
     }
   }

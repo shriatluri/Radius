@@ -12,7 +12,7 @@ Features:
 
 import hashlib
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -30,6 +30,22 @@ class APIKeyInfo:
     name: str
     scopes: list[str]
     is_test_key: bool = False
+
+
+@dataclass
+class AuthInfo:
+    """
+    Unified auth context for both Clerk JWT and API key authentication.
+
+    Every authenticated request resolves to an AuthInfo that carries the
+    business_id regardless of auth method. Endpoints don't care which
+    method was used — they just read business_id and scopes.
+    """
+    business_id: str
+    auth_type: str  # "clerk" | "api_key"
+    scopes: list[str] = field(default_factory=list)
+    user_id: Optional[str] = None   # Clerk user DB id (for clerk auth)
+    key_id: Optional[str] = None    # API key id (for api_key auth)
 
 
 # Mock API keys for demo/testing (used when database is unavailable or USE_DATABASE=false)
@@ -220,3 +236,125 @@ def check_scope(required_scope: str):
                 },
             )
     return scope_checker
+
+
+async def require_auth(
+    authorization: Optional[str] = Header(None),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    db: Session = Depends(get_db),
+) -> AuthInfo:
+    """
+    Unified auth dependency: accepts Clerk JWT (Bearer token) or API key.
+
+    Checks Authorization: Bearer <jwt> first, then falls back to X-API-Key.
+    Both resolve to an AuthInfo with business_id so endpoints are auth-agnostic.
+
+    Clerk users get dashboard:all scope (read access to transactions, audit, reports).
+    API key users get their configured scopes.
+    """
+    # Try Bearer JWT first
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:]  # Strip "Bearer "
+        return _auth_from_clerk_token(token, db)
+
+    # Fall back to API key
+    if x_api_key:
+        key_info = validate_api_key(x_api_key, db)
+        if not key_info:
+            raise HTTPException(
+                status_code=401,
+                detail={"error": {"code": "invalid_api_key", "message": "Invalid API key"}},
+            )
+        return AuthInfo(
+            business_id=key_info.business_id,
+            auth_type="api_key",
+            scopes=key_info.scopes,
+            key_id=key_info.key_id,
+        )
+
+    raise HTTPException(
+        status_code=401,
+        detail={
+            "error": {
+                "code": "missing_credentials",
+                "message": "Authorization header (Bearer token) or X-API-Key header is required",
+            }
+        },
+    )
+
+
+def _auth_from_clerk_token(token: str, db: Session) -> AuthInfo:
+    """Verify a Clerk JWT and resolve it to an AuthInfo."""
+    from app.core.clerk import verify_clerk_token
+    from app.db.repositories import UserRepository
+
+    claims = verify_clerk_token(token)
+    if claims is None:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": {"code": "invalid_token", "message": "Invalid or expired token"}},
+        )
+
+    clerk_user_id = claims.get("sub")
+    if not clerk_user_id:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": {"code": "invalid_token", "message": "Token missing sub claim"}},
+        )
+
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_clerk_id(clerk_user_id)
+
+    if not user:
+        # Auto-provision: try to match by email from Clerk claims
+        user = _auto_provision_user(claims, clerk_user_id, db)
+
+    return AuthInfo(
+        business_id=user.business_id,
+        auth_type="clerk",
+        scopes=["dashboard:all", "transactions:read", "reports:read"],
+        user_id=user.id,
+    )
+
+
+def _auto_provision_user(claims: dict, clerk_user_id: str, db: Session):
+    """
+    Auto-provision a User record on first Clerk login.
+
+    Tries to match the Clerk email to an existing Business.
+    If no match, creates a new Business + User.
+    """
+    from app.db.repositories import BusinessRepository, UserRepository
+
+    # Clerk stores email in different claim locations depending on config
+    email = (
+        claims.get("email")
+        or claims.get("email_addresses", [{}])[0].get("email_address", "")
+        if isinstance(claims.get("email_addresses"), list) and claims.get("email_addresses")
+        else claims.get("email", "")
+    )
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"code": "missing_email", "message": "Could not determine email from Clerk token"}},
+        )
+
+    biz_repo = BusinessRepository(db)
+    user_repo = UserRepository(db)
+
+    # Try matching email to existing business
+    business = biz_repo.get_by_email(email)
+    if not business:
+        # Create a new business for this user
+        name = claims.get("name") or claims.get("first_name", "") + " " + claims.get("last_name", "")
+        name = name.strip() or email.split("@")[0]
+        business = biz_repo.create(name=name, email=email)
+
+    user = user_repo.create(
+        clerk_user_id=clerk_user_id,
+        business_id=business.id,
+        email=email,
+        role="admin",  # First user for a business gets admin
+    )
+    return user

@@ -290,13 +290,47 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 > building auth correctly takes months and introduces serious security risk.
 
 - [ ] **Integrate Clerk (or Auth0/Supabase Auth)**
-  - Clerk handles: email+password login, session management, MFA, JWT issuance
-  - Frontend: replace the "paste API key" screen with a proper login page
-  - Backend: validate Clerk JWT on dashboard-facing endpoints, extract `business_id` from claims
+  - Clerk handles: Google OAuth + email/password login, session management, JWT issuance
+  - Dual auth model: Clerk JWT for dashboard users, API keys for programmatic access
+  - Both resolve to `business_id` — endpoints don't care which auth method was used
+
+  **Backend — foundation:**
+  - Add `User` model to `backend/app/db/models.py` (`clerk_user_id` → `business_id` mapping, `email`, `role`)
+  - Add `UserRepository` to `backend/app/db/repositories.py` (`get_by_clerk_id`, `create`, `list_by_business`)
+  - Add Clerk config to `backend/app/core/config.py` (`CLERK_SECRET_KEY`, `CLERK_JWKS_URL` env vars)
+  - Add `PyJWT[crypto]>=2.8` to `backend/requirements.txt`
+
+  **Backend — Clerk JWT verification:**
+  - New `backend/app/core/clerk.py`: fetch + cache JWKS keys, verify RS256 JWT, extract `sub` (Clerk user ID)
+  - JWKS URL derived from Clerk publishable key (base64-encoded Frontend API domain)
+  - 1-hour key cache with auto-refresh
+
+  **Backend — unified auth dependency:**
+  - Add `AuthInfo` dataclass to `backend/app/core/auth.py` (`business_id`, `auth_type`, `scopes`, `user_id`, `key_id`)
+  - Add `require_auth()` dependency: checks `Authorization: Bearer <jwt>` first, then `X-API-Key` fallback
+  - Clerk users get `dashboard:all` scope (read access to transactions, audit, reports)
+  - Export `AuthInfo` + `require_auth` from `backend/app/core/__init__.py`
+
+  **Backend — endpoints:**
+  - New `backend/app/api/auth.py` with `GET /v1/auth/me` (returns business name, email, auth type)
+  - Auto-provisioning on first Clerk login: match email → existing Business, or create new Business + User
+  - Switch read endpoints to `require_auth`: `GET /v1/transactions`, `GET /v1/transactions/{id}/audit`, `GET /v1/reports/export`
+  - Write endpoints stay `require_api_key`-only: `POST /ingest`, `/annotate`, `/verify`, `/transmit`
+
+  **Frontend — Clerk integration:**
+  - `npm install @clerk/clerk-react` in `frontend/`
+  - Add `VITE_CLERK_PUBLISHABLE_KEY` to `frontend/.env.local`
+  - Wrap app with `<ClerkProvider>` in `frontend/src/main.jsx`
+  - Replace `ApiKeyInput.jsx` with new `LoginPage.jsx` using Clerk's `<SignIn />` component
+  - Rewrite `App.jsx`: use `useUser()` + `useAuth()` hooks, `<SignedIn>`/`<SignedOut>` gating
+  - Update `api.js`: replace localStorage `X-API-Key` with `Authorization: Bearer` token from `getToken()`
+  - Update `Filters.jsx` logout button to use Clerk's `signOut()`
+  - Show business name in header via `/v1/auth/me` endpoint
 
 - [ ] **Scope dashboard access to business_id**
   - After login, user can only see their own business's transactions
   - Already enforced at the data layer — just needs the auth layer wired up
+  - `require_auth()` extracts `business_id` from User record (Clerk) or APIKey record (API key)
 
 - [ ] **Key management UI in dashboard**
   - View active API keys, their scopes, and last-used timestamp

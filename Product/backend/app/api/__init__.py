@@ -7,7 +7,7 @@ Routes are registered to the main app using APIRouter.
 
 from fastapi import APIRouter
 
-from . import transactions, wallets, travel_rule, reports, api_keys, health, payments, admin, signup
+from . import transactions, wallets, travel_rule, reports, api_keys, health, payments, admin, signup, auth
 
 # Create main API router with /v1 prefix
 api_router = APIRouter(prefix="/v1")
@@ -22,5 +22,6 @@ api_router.include_router(reports.router, tags=["Reports"])
 api_router.include_router(api_keys.router, tags=["API Keys"])
 api_router.include_router(payments.router, tags=["Payments"])
 api_router.include_router(admin.router, tags=["Admin"])
+api_router.include_router(auth.router, tags=["Auth"])
 
 __all__ = ["api_router"]

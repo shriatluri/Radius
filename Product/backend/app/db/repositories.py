@@ -385,6 +385,45 @@ class BusinessRepository:
         return result > 0
 
 
+class UserRepository:
+    """Repository for User (Clerk dashboard auth) operations."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_clerk_id(self, clerk_user_id: str) -> Optional[models.User]:
+        """Look up a user by their Clerk user ID."""
+        return self.db.query(models.User).filter(
+            models.User.clerk_user_id == clerk_user_id
+        ).first()
+
+    def create(
+        self,
+        clerk_user_id: str,
+        business_id: str,
+        email: str,
+        role: str = "member",
+    ) -> models.User:
+        """Create a new dashboard user linked to a business."""
+        user = models.User(
+            id=_generate_id("usr"),
+            clerk_user_id=clerk_user_id,
+            business_id=business_id,
+            email=email.lower().strip(),
+            role=role,
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def list_by_business(self, business_id: str) -> List[models.User]:
+        """List all users for a business."""
+        return self.db.query(models.User).filter(
+            models.User.business_id == business_id
+        ).all()
+
+
 class APIKeyRepository:
     """Repository for API key operations."""
 

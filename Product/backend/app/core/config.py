@@ -47,6 +47,10 @@ class Settings:
     # API
     api_version: str = "0.2.0"
 
+    # Clerk (dashboard auth)
+    clerk_secret_key: str = ""
+    clerk_jwks_url: str = ""  # Derived from publishable key if empty
+
     # Sanctions screening
     sanctions_provider: str = "ofac_local"  # "ofac_local" | "opensanctions" | "none"
     opensanctions_api_key: str = ""         # Required when sanctions_provider=opensanctions
@@ -75,6 +79,8 @@ class Settings:
             rate_limit_tokens=int(os.getenv("RATE_LIMIT_TOKENS", "100")),
             rate_limit_refill_rate=float(os.getenv("RATE_LIMIT_REFILL_RATE", "1.67")),
             api_version=os.getenv("API_VERSION", "0.2.0"),
+            clerk_secret_key=os.getenv("CLERK_SECRET_KEY", ""),
+            clerk_jwks_url=os.getenv("CLERK_JWKS_URL", ""),
             sanctions_provider=os.getenv("SANCTIONS_PROVIDER", "ofac_local"),
             opensanctions_api_key=os.getenv("OPENSANCTIONS_API_KEY", ""),
             ofac_sdn_url=os.getenv(

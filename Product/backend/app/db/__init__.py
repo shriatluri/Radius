@@ -12,6 +12,7 @@ from .models import (
     RateLimitBucket,
     Transaction,
     TravelRuleProof,
+    User,
     WalletVerification,
 )
 from .repositories import (
@@ -20,6 +21,7 @@ from .repositories import (
     BusinessRepository,
     TransactionRepository,
     TravelRuleProofRepository,
+    UserRepository,
     WalletVerificationRepository,
 )
 
@@ -37,6 +39,7 @@ __all__ = [
     "RateLimitBucket",
     "Transaction",
     "TravelRuleProof",
+    "User",
     "WalletVerification",
     # Repositories
     "APIKeyRepository",
@@ -44,5 +47,6 @@ __all__ = [
     "BusinessRepository",
     "TransactionRepository",
     "TravelRuleProofRepository",
+    "UserRepository",
     "WalletVerificationRepository",
 ]

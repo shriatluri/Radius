@@ -263,6 +263,27 @@ class TravelRuleProof(Base):
     created_at = Column(DateTime, nullable=False, default=func.now())
 
 
+class User(Base):
+    """
+    A dashboard user authenticated via Clerk.
+
+    Maps a Clerk user ID to a Business, enabling email+password / OAuth
+    login for compliance officers, finance teams, and auditors.
+    """
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    clerk_user_id = Column(String(255), unique=True, nullable=False, index=True)
+    business_id = Column(String(20), ForeignKey("businesses.id"), nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)
+    role = Column(String(50), nullable=False, default="member")  # member | admin
+    created_at = Column(DateTime, nullable=False, default=func.now())
+
+    __table_args__ = (
+        Index("ix_users_business_role", "business_id", "role"),
+    )
+
+
 class RateLimitBucket(Base):
     """
     Rate limiting tracking per API key.

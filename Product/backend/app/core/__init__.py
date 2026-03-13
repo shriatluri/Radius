@@ -6,7 +6,9 @@ Contains authentication, rate limiting, configuration, and error handling.
 
 from .auth import (
     APIKeyInfo,
+    AuthInfo,
     require_api_key,
+    require_auth,
     check_scope,
     generate_api_key,
     hash_api_key,
@@ -25,7 +27,9 @@ from .config import settings
 __all__ = [
     # Auth
     "APIKeyInfo",
+    "AuthInfo",
     "require_api_key",
+    "require_auth",
     "check_scope",
     "generate_api_key",
     "hash_api_key",

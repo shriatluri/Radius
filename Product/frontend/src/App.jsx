@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useUser, useAuth, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { api } from './lib/api';
-import ApiKeyInput from './components/ApiKeyInput';
+import LoginPage from './components/LoginPage';
 import StatsBar from './components/StatsBar';
 import Filters from './components/Filters';
 import TransactionList from './components/TransactionList';
 import TransactionDetail from './components/TransactionDetail';
 
-export default function App() {
-  const [apiKey, setApiKey] = useState(api.getApiKey());
+function Dashboard() {
+  const { user } = useUser();
+  const { getToken, signOut } = useAuth();
+
+  const [businessName, setBusinessName] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [filters, setFilters] = useState({
     status: null,
@@ -21,10 +25,27 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Wire up the Clerk token getter for API calls
+  useEffect(() => {
+    api.setTokenGetter(getToken);
+    return () => api.clearTokenGetter();
+  }, [getToken]);
+
+  // Fetch business name on mount
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const data = await api.getMe();
+        setBusinessName(data.business_name);
+      } catch (err) {
+        console.error('Failed to fetch user info:', err);
+      }
+    };
+    fetchMe();
+  }, []);
+
   // Fetch transactions when filters change
   useEffect(() => {
-    if (!apiKey) return;
-
     const fetchTransactions = async () => {
       setLoading(true);
       setError(null);
@@ -34,18 +55,13 @@ export default function App() {
       } catch (err) {
         setError(err.message);
         console.error('Failed to fetch transactions:', err);
-
-        // If unauthorized, clear API key
-        if (err.message.includes('401') || err.message.includes('403') || err.message.includes('Unauthorized')) {
-          handleLogout();
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchTransactions();
-  }, [apiKey, filters]);
+  }, [filters]);
 
   // Fetch audit record when transaction is selected
   useEffect(() => {
@@ -67,22 +83,8 @@ export default function App() {
     fetchAuditRecord();
   }, [selectedTxId]);
 
-  const handleApiKeySubmit = (key) => {
-    api.setApiKey(key);
-    setApiKey(key);
-  };
-
   const handleLogout = () => {
-    api.clearApiKey();
-    setApiKey(null);
-    setTransactions([]);
-    setFilters({
-      status: null,
-      risk_level: null,
-      start_date: null,
-      end_date: null,
-      limit: 100,
-    });
+    signOut();
   };
 
   const handleFilterChange = (newFilters) => {
@@ -107,10 +109,7 @@ export default function App() {
     setAuditRecord(null);
   };
 
-  // If not authenticated, show API key input
-  if (!apiKey) {
-    return <ApiKeyInput onSubmit={handleApiKeySubmit} />;
-  }
+  const displayName = businessName || user?.primaryEmailAddress?.emailAddress || 'Dashboard';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,7 +118,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Acme Corp</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
               <p className="text-sm text-gray-600 mt-1">Compliance Audit Dashboard</p>
             </div>
             <div className="text-right">
@@ -162,5 +161,18 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <>
+      <SignedOut>
+        <LoginPage />
+      </SignedOut>
+      <SignedIn>
+        <Dashboard />
+      </SignedIn>
+    </>
   );
 }

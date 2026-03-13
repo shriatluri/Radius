@@ -12,7 +12,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
-from app.core import APIKeyInfo, require_api_key, RadiusError, RateLimitResult
+from app.core import APIKeyInfo, AuthInfo, require_api_key, require_auth, RadiusError, RateLimitResult
 from app.core.auth import check_scope
 from app.core.logging import set_business_id
 from app.core.config import settings
@@ -311,13 +311,12 @@ def _ingest_transaction_memory(
 
 @router.get("", response_model=TransactionListResponse)
 def list_transactions(
-    auth: APIKeyInfo = Depends(require_api_key),
+    auth: AuthInfo = Depends(require_auth),
     db: Session = Depends(get_db),
     status: str | None = None,
     risk_level: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    _: None = Depends(check_scope("transactions:read")),
 ) -> TransactionListResponse:
     """
     List transactions with optional filtering.
@@ -452,9 +451,8 @@ def annotate_payment(
 @router.get("/{transaction_id}/audit", response_model=AuditRecord)
 def get_audit_record(
     transaction_id: str,
-    auth: APIKeyInfo = Depends(require_api_key),
+    auth: AuthInfo = Depends(require_auth),
     db: Session = Depends(get_db),
-    _: None = Depends(check_scope("transactions:read")),
 ) -> AuditRecord:
     """
     Get the audit record for a specific transaction.
