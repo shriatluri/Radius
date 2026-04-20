@@ -6,6 +6,7 @@ import StatsBar from './components/StatsBar';
 import Filters from './components/Filters';
 import TransactionList from './components/TransactionList';
 import TransactionDetail from './components/TransactionDetail';
+import KeyManagement from './components/KeyManagement';
 
 function Dashboard() {
   const { user } = useUser();
@@ -24,6 +25,7 @@ function Dashboard() {
   const [auditRecord, setAuditRecord] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showKeys, setShowKeys] = useState(false);
 
   // Wire up the Clerk token getter for API calls
   useEffect(() => {
@@ -121,9 +123,20 @@ function Dashboard() {
               <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
               <p className="text-sm text-gray-600 mt-1">Compliance Audit Dashboard</p>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-500 uppercase tracking-wide">Powered by</div>
-              <div className="text-lg font-semibold text-blue-600">Radius</div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowKeys(true)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                API Keys
+              </button>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 uppercase tracking-wide">Powered by</div>
+                <div className="text-lg font-semibold text-blue-600">Radius</div>
+              </div>
             </div>
           </div>
         </div>
@@ -159,6 +172,11 @@ function Dashboard() {
           auditRecord={auditRecord}
           onClose={handleCloseModal}
         />
+      )}
+
+      {/* Key Management Modal */}
+      {showKeys && (
+        <KeyManagement onClose={() => setShowKeys(false)} />
       )}
     </div>
   );

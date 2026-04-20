@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 class APIKeyCreateRequest(BaseModel):
     """Request to create a new API key."""
-    business_id: str
+    business_id: Optional[str] = None  # Defaults to authenticated user's business
     name: Optional[str] = None
     scopes: Optional[str] = "read,write"  # Comma-separated
     expires_in_days: Optional[int] = None  # None = never expires

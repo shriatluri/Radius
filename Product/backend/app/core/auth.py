@@ -238,6 +238,31 @@ def check_scope(required_scope: str):
     return scope_checker
 
 
+def check_auth_scope(required_scope: str):
+    """
+    Dependency factory to check scope on unified auth (Clerk JWT or API key).
+
+    Same as check_scope but works with require_auth instead of require_api_key.
+    Clerk users with 'dashboard:all' scope pass all dashboard-level checks.
+    """
+    async def scope_checker(auth: AuthInfo = Depends(require_auth)) -> None:
+        if (
+            required_scope not in auth.scopes
+            and "admin:all" not in auth.scopes
+            and "dashboard:all" not in auth.scopes
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": {
+                        "code": "insufficient_scope",
+                        "message": f"This endpoint requires the '{required_scope}' scope",
+                    }
+                },
+            )
+    return scope_checker
+
+
 async def require_auth(
     authorization: Optional[str] = Header(None),
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),

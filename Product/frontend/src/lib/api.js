@@ -100,6 +100,35 @@ class ApiClient {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   }
+
+  // --- API Key Management ---
+
+  async listApiKeys() {
+    const response = await this.request('/api-keys');
+    return response.json();
+  }
+
+  async createApiKey({ name, scopes, is_test_key = true, expires_in_days = null }) {
+    const response = await this.request('/api-keys', {
+      method: 'POST',
+      body: JSON.stringify({ name, scopes, is_test_key, expires_in_days }),
+    });
+    return response.json();
+  }
+
+  async revokeApiKey(keyId) {
+    const response = await this.request(`/api-keys/${keyId}`, {
+      method: 'DELETE',
+    });
+    return response.json();
+  }
+
+  async rotateApiKey(keyId) {
+    const response = await this.request(`/api-keys/${keyId}/rotate`, {
+      method: 'POST',
+    });
+    return response.json();
+  }
 }
 
 export const api = new ApiClient();

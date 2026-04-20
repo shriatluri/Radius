@@ -289,7 +289,7 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 > Use an auth provider (Clerk recommended) rather than building auth from scratch —
 > building auth correctly takes months and introduces serious security risk.
 
-- [ ] **Integrate Clerk (or Auth0/Supabase Auth)**
+- [x] **Integrate Clerk (or Auth0/Supabase Auth)**
   - Clerk handles: Google OAuth + email/password login, session management, JWT issuance
   - Dual auth model: Clerk JWT for dashboard users, API keys for programmatic access
   - Both resolve to `business_id` — endpoints don't care which auth method was used
@@ -327,12 +327,12 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
   - Update `Filters.jsx` logout button to use Clerk's `signOut()`
   - Show business name in header via `/v1/auth/me` endpoint
 
-- [ ] **Scope dashboard access to business_id**
+- [x] **Scope dashboard access to business_id**
   - After login, user can only see their own business's transactions
   - Already enforced at the data layer — just needs the auth layer wired up
   - `require_auth()` extracts `business_id` from User record (Clerk) or APIKey record (API key)
 
-- [ ] **Key management UI in dashboard**
+- [x] **Key management UI in dashboard**
   - View active API keys, their scopes, and last-used timestamp
   - Create new keys with specific scopes (write-only for payment system, read-only for auditors)
   - Revoke keys

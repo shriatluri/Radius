@@ -1,5 +1,7 @@
 """
 API Key management endpoints.
+
+Supports both Clerk JWT (dashboard users) and API key authentication.
 """
 
 from datetime import datetime, timedelta
@@ -10,8 +12,7 @@ from sqlalchemy.orm import Session
 
 import logging
 
-from app.core import APIKeyInfo, require_api_key, generate_api_key, RadiusError
-from app.core.auth import check_scope
+from app.core import AuthInfo, require_auth, generate_api_key, RadiusError
 
 logger = logging.getLogger(__name__)
 from app.db import get_db, APIKeyRepository
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/api-keys")
 @router.post("", response_model=APIKeyCreateResponse)
 def create_api_key(
     payload: APIKeyCreateRequest,
-    auth: APIKeyInfo = Depends(require_api_key),
+    auth: AuthInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ):
     """
@@ -38,8 +39,20 @@ def create_api_key(
     IMPORTANT: The returned `api_key` is shown ONLY ONCE. Store it securely.
     We only store a hash of the key, so it cannot be recovered.
 
-    Requires admin scope or ownership of the business.
+    If business_id is not provided in the request, it defaults to the
+    authenticated user's business.
     """
+    # Use the auth context's business_id if not explicitly provided
+    target_business_id = payload.business_id or auth.business_id
+
+    # Prevent creating keys for a different business (unless admin)
+    if target_business_id != auth.business_id and "admin:all" not in auth.scopes:
+        raise RadiusError(
+            "forbidden",
+            "Cannot create API keys for a different business",
+            403,
+        )
+
     prefix = "sk_test_" if payload.is_test_key else "sk_live_"
     plaintext_key, key_hash = generate_api_key(prefix)
 
@@ -51,7 +64,7 @@ def create_api_key(
     db_key = repo.create(
         key_hash=key_hash,
         key_prefix=prefix,
-        business_id=payload.business_id,
+        business_id=target_business_id,
         name=payload.name,
         scopes=payload.scopes or "read,write",
         expires_at=expires_at,
@@ -71,7 +84,7 @@ def create_api_key(
 
 @router.get("", response_model=APIKeyListResponse)
 def list_api_keys(
-    auth: APIKeyInfo = Depends(require_api_key),
+    auth: AuthInfo = Depends(require_auth),
     db: Session = Depends(get_db),
     business_id: Optional[str] = Query(None, description="Filter by business ID"),
 ):
@@ -81,6 +94,14 @@ def list_api_keys(
     Note: The actual key values are never returned - only metadata.
     """
     target_business = business_id or auth.business_id
+
+    # Prevent listing keys for a different business (unless admin)
+    if target_business != auth.business_id and "admin:all" not in auth.scopes:
+        raise RadiusError(
+            "forbidden",
+            "Cannot list API keys for a different business",
+            403,
+        )
 
     repo = APIKeyRepository(db)
     db_keys = repo.list_by_business(target_business)
@@ -106,33 +127,23 @@ def list_api_keys(
 @router.post("/{key_id}/rotate", response_model=APIKeyCreateResponse)
 def rotate_api_key(
     key_id: str,
-    auth: APIKeyInfo = Depends(require_api_key),
+    auth: AuthInfo = Depends(require_auth),
     db: Session = Depends(get_db),
-    _: None = Depends(check_scope("transactions:write")),
 ):
     """
     Rotate an API key — revoke the old one and issue a new one instantly.
 
-    Why rotation exists: if a key is accidentally exposed (committed to git,
-    logged somewhere, seen by the wrong person), you can invalidate it immediately
-    and replace it without downtime. The new key has the same scopes and prefix
-    as the old one so your integration keeps working after you swap the value.
-
     Security: you can only rotate keys belonging to your own business_id.
-    Attempting to rotate another tenant's key returns 404 (not 403) — we don't
-    confirm whether a key ID exists outside your account.
+    Attempting to rotate another tenant's key returns 404 (not 403).
 
     The new plaintext key is returned ONCE. Store it immediately.
     """
     repo = APIKeyRepository(db)
     old_key = repo.get_by_id(key_id)
 
-    # 404 regardless of whether the key exists but belongs to another business —
-    # we don't want to confirm the existence of other tenants' keys.
     if not old_key or old_key.business_id != auth.business_id:
         raise RadiusError("key_not_found", f"API key {key_id} not found", 404)
 
-    # Atomically revoke old and create new with same prefix + scopes
     repo.revoke(key_id)
 
     plaintext_key, key_hash = generate_api_key(old_key.key_prefix)
@@ -170,7 +181,7 @@ def rotate_api_key(
 @router.delete("/{key_id}", response_model=APIKeyRevokeResponse)
 def revoke_api_key(
     key_id: str,
-    auth: APIKeyInfo = Depends(require_api_key),
+    auth: AuthInfo = Depends(require_auth),
     db: Session = Depends(get_db),
 ):
     """
@@ -180,6 +191,12 @@ def revoke_api_key(
     This action cannot be undone.
     """
     repo = APIKeyRepository(db)
+    old_key = repo.get_by_id(key_id)
+
+    # Prevent revoking keys from other businesses
+    if not old_key or old_key.business_id != auth.business_id:
+        raise RadiusError("key_not_found", f"API key {key_id} not found", 404)
+
     success = repo.revoke(key_id)
 
     if not success:
