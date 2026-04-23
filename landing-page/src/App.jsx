@@ -1,4 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+// ─── Theme ───────────────────────────────────────────────────────────────────
+
+function useTheme() {
+  const [dark, setDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark'
+    }
+    return false
+  })
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }, [dark])
+
+  return [dark, () => setDark((d) => !d)]
+}
+
+const Sun = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+  </svg>
+)
+
+const Moon = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+  </svg>
+)
 
 // ─── Waitlist Form ───────────────────────────────────────────────────────────
 
@@ -13,8 +43,9 @@ function WaitlistForm({ center = false }) {
 
   if (submitted) {
     return (
-      <p className={`text-[#888] text-sm ${center ? 'text-center' : ''}`}>
-        You're on the list. We'll reach out to <span className="text-white">{email}</span>.
+      <p className={`text-sm ${center ? 'text-center' : ''}`} style={{ color: 'var(--text-3)' }}>
+        You're on the list. We'll reach out to{' '}
+        <span style={{ color: 'var(--text-1)' }}>{email}</span>.
       </p>
     )
   }
@@ -30,11 +61,20 @@ function WaitlistForm({ center = false }) {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@company.com"
         required
-        className="flex-1 bg-[#0a0a0a] border border-[#222] rounded-lg px-4 py-2.5 text-sm text-white placeholder-[#444] focus:outline-none focus:border-[#444] transition-colors"
+        className="flex-1 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors"
+        style={{
+          backgroundColor: 'var(--bg-input)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-1)',
+        }}
       />
       <button
         type="submit"
-        className="bg-white text-black px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-[#e5e5e5] transition-colors whitespace-nowrap"
+        className="px-6 py-2.5 rounded-lg font-medium text-sm transition-colors whitespace-nowrap"
+        style={{
+          backgroundColor: 'var(--btn-bg)',
+          color: 'var(--btn-text)',
+        }}
       >
         Join waitlist
       </button>
@@ -44,51 +84,82 @@ function WaitlistForm({ center = false }) {
 
 // ─── Nav ─────────────────────────────────────────────────────────────────────
 
-function Nav() {
+function Nav({ dark, toggleTheme }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#141414] bg-black/90 backdrop-blur-md">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
+      style={{ backgroundColor: 'var(--bg-nav)', borderBottom: '1px solid var(--border)' }}
+    >
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-[#7c3aed]" />
-          <span className="font-semibold text-white text-sm tracking-tight">Radius</span>
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+          <span className="font-semibold text-sm tracking-tight" style={{ color: 'var(--text-1)' }}>
+            Radius
+          </span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 text-sm text-[#555]">
-          <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+        <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: 'var(--text-3)' }}>
+          <a href="#how-it-works" className="hover:opacity-80 transition-opacity">How it works</a>
+          <a href="#features" className="hover:opacity-80 transition-opacity">Features</a>
+          <a href="#pricing" className="hover:opacity-80 transition-opacity">Pricing</a>
         </div>
 
-        <a
-          href="#waitlist"
-          className="hidden md:block text-sm bg-white text-black px-4 py-1.5 rounded-lg font-medium hover:bg-[#e5e5e5] transition-colors"
-        >
-          Join the waitlist
-        </a>
+        <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: 'var(--text-3)', border: '1px solid var(--border)' }}
+            aria-label="Toggle theme"
+          >
+            {dark ? <Sun /> : <Moon />}
+          </button>
+          <a
+            href="#waitlist"
+            className="text-sm px-4 py-1.5 rounded-lg font-medium transition-colors"
+            style={{ backgroundColor: 'var(--btn-bg)', color: 'var(--btn-text)' }}
+          >
+            Join the waitlist
+          </a>
+        </div>
 
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden text-[#555] hover:text-white p-1"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            {open
-              ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
-          </svg>
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg"
+            style={{ color: 'var(--text-3)' }}
+            aria-label="Toggle theme"
+          >
+            {dark ? <Sun /> : <Moon />}
+          </button>
+          <button
+            onClick={() => setOpen(!open)}
+            className="p-1"
+            style={{ color: 'var(--text-3)' }}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {open
+                ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-[#141414] bg-black px-6 py-5 flex flex-col gap-4 text-sm">
-          <a href="#how-it-works" onClick={() => setOpen(false)} className="text-[#555] hover:text-white">How it works</a>
-          <a href="#features" onClick={() => setOpen(false)} className="text-[#555] hover:text-white">Features</a>
-          <a href="#pricing" onClick={() => setOpen(false)} className="text-[#555] hover:text-white">Pricing</a>
+        <div
+          className="md:hidden px-6 py-5 flex flex-col gap-4 text-sm"
+          style={{ backgroundColor: 'var(--bg)', borderTop: '1px solid var(--border)' }}
+        >
+          <a href="#how-it-works" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>How it works</a>
+          <a href="#features" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>Features</a>
+          <a href="#pricing" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>Pricing</a>
           <a
             href="#waitlist"
             onClick={() => setOpen(false)}
-            className="bg-white text-black px-4 py-2 rounded-lg font-medium text-center mt-2"
+            className="px-4 py-2 rounded-lg font-medium text-center mt-2"
+            style={{ backgroundColor: 'var(--btn-bg)', color: 'var(--btn-text)' }}
           >
             Join the waitlist
           </a>
@@ -104,18 +175,28 @@ function Hero() {
   return (
     <section className="pt-32 pb-24 px-6">
       <div className="max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 border border-[#1a1a1a] bg-[#0a0a0a] text-[#666] text-xs font-medium px-4 py-1.5 rounded-full mb-8">
+        <div
+          className="inline-flex items-center gap-2 text-xs font-medium px-4 py-1.5 rounded-full mb-8"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-3)',
+          }}
+        >
           <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
           OFAC + EU + UN sanctions screening
         </div>
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[1.05] tracking-tight mb-7 max-w-4xl mx-auto">
+        <h1
+          className="text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.05] tracking-tight mb-7 max-w-4xl mx-auto"
+          style={{ color: 'var(--text-1)' }}
+        >
           The paper trail your
           <br className="hidden sm:block" />
           blockchain never had.
         </h1>
 
-        <p className="text-lg text-[#777] max-w-2xl mx-auto leading-relaxed mb-10">
+        <p className="text-lg max-w-2xl mx-auto leading-relaxed mb-10" style={{ color: 'var(--text-2)' }}>
           Radius screens every stablecoin transfer against sanctions lists,
           checks Travel Rule thresholds across 30 jurisdictions, and hands you
           back a structured compliance record. One API call before you send. One after.
@@ -123,97 +204,111 @@ function Hero() {
 
         <div id="waitlist" className="mb-20">
           <WaitlistForm center />
-          <p className="text-xs text-[#333] mt-3">Early access opening soon.</p>
+          <p className="text-xs mt-3" style={{ color: 'var(--text-4)' }}>
+            Early access opening soon.
+          </p>
         </div>
 
         {/* Code blocks */}
         <div className="w-full max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="border border-[#161616] rounded-2xl overflow-hidden bg-[#080808] text-left">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[#131313]">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a1a]" />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a1a]" />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a1a]" />
-              <span className="ml-3 text-xs text-[#333] font-mono">request</span>
+          <div
+            className="rounded-2xl overflow-hidden text-left"
+            style={{ backgroundColor: 'var(--bg-code)', border: '1px solid var(--border)' }}
+          >
+            <div
+              className="flex items-center gap-1.5 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <span className="ml-3 text-xs font-mono" style={{ color: 'var(--text-4)' }}>request</span>
             </div>
             <div className="p-5 font-mono text-[13px] leading-7 overflow-x-auto">
-              <div className="text-[#444]">// check before sending</div>
+              <div style={{ color: 'var(--code-cmt)' }}>// check before sending</div>
               <div>
-                <span className="text-[#8b9dc3]">const </span>
-                <span className="text-[#ddd]">result</span>
-                <span className="text-[#555]"> = </span>
-                <span className="text-[#8b9dc3]">await </span>
-                <span className="text-[#ddd]">radius</span>
-                <span className="text-[#555]">.</span>
-                <span className="text-[#ddd]">check</span>
-                <span className="text-[#555]">({'{'}</span>
+                <span style={{ color: 'var(--code-kw)' }}>const </span>
+                <span style={{ color: 'var(--text-1)' }}>result</span>
+                <span style={{ color: 'var(--code-punc)' }}> = </span>
+                <span style={{ color: 'var(--code-kw)' }}>await </span>
+                <span style={{ color: 'var(--text-1)' }}>radius</span>
+                <span style={{ color: 'var(--code-punc)' }}>.</span>
+                <span style={{ color: 'var(--text-1)' }}>check</span>
+                <span style={{ color: 'var(--code-punc)' }}>({'{'}</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">from</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"0x742d35Cc..."</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>from</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"0x742d35Cc..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">to</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"0x3fC91A3a..."</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>to</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"0x3fC91A3a..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">amount</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"2500.00"</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>amount</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"2500.00"</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">asset</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"USDC"</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>asset</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"USDC"</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">purpose</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"contractor_payout"</span>
+                <span style={{ color: 'var(--code-prop)' }}>purpose</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"contractor_payout"</span>
               </div>
-              <div><span className="text-[#555]">{'}'})</span></div>
+              <div><span style={{ color: 'var(--code-punc)' }}>{'}'})</span></div>
             </div>
           </div>
 
-          <div className="border border-[#161616] rounded-2xl overflow-hidden bg-[#080808] text-left">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[#131313]">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a1a]" />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a1a]" />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1a1a1a]" />
-              <span className="ml-3 text-xs text-[#333] font-mono">response</span>
+          <div
+            className="rounded-2xl overflow-hidden text-left"
+            style={{ backgroundColor: 'var(--bg-code)', border: '1px solid var(--border)' }}
+          >
+            <div
+              className="flex items-center gap-1.5 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <span className="ml-3 text-xs font-mono" style={{ color: 'var(--text-4)' }}>response</span>
             </div>
             <div className="p-5 font-mono text-[13px] leading-7 overflow-x-auto">
-              <div className="text-[#444]">// returns in ~200ms</div>
-              <div className="text-[#555]">{'{'}</div>
+              <div style={{ color: 'var(--code-cmt)' }}>// returns in ~200ms</div>
+              <div style={{ color: 'var(--code-punc)' }}>{'{'}</div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">risk_level</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"low"</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>risk_level</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"low"</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">sanctions</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"clear"</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>sanctions</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"clear"</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">travel_rule</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"not_required"</span>
-                <span className="text-[#555]">,</span>
+                <span style={{ color: 'var(--code-prop)' }}>travel_rule</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"not_required"</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
               </div>
               <div className="pl-5">
-                <span className="text-[#c9a87c]">audit_id</span>
-                <span className="text-[#555]">: </span>
-                <span className="text-[#a5c5a0]">"aud_01HX8KmR9..."</span>
+                <span style={{ color: 'var(--code-prop)' }}>audit_id</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"aud_01HX8KmR9..."</span>
               </div>
-              <div className="text-[#555]">{'}'}</div>
+              <div style={{ color: 'var(--code-punc)' }}>{'}'}</div>
             </div>
           </div>
         </div>
@@ -233,12 +328,14 @@ function Stats() {
   ]
 
   return (
-    <div className="border-y border-[#111]">
+    <div style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
       <div className="max-w-5xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
         {items.map((s) => (
           <div key={s.value} className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{s.value}</div>
-            <div className="text-sm text-[#444]">{s.label}</div>
+            <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'var(--text-1)' }}>
+              {s.value}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--text-3)' }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -253,10 +350,10 @@ function BeforeAfter() {
     <section className="py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text-1)' }}>
             Your auditor can't read a blockchain.
           </h2>
-          <p className="text-[#666] text-base leading-relaxed">
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-2)' }}>
             A transaction hash proves money moved. It says nothing about who sent it,
             why, or whether the recipient is sanctioned. That gap is what gets you stuck
             at accounting close, bank review, or fundraising diligence.
@@ -264,52 +361,52 @@ function BeforeAfter() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-3">
-          <div className="bg-[#080808] border border-[#161616] rounded-2xl p-6">
-            <div className="text-xs font-medium text-[#444] uppercase tracking-wider mb-4">
+          <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-3)' }}>
               What your accountant gets today
             </div>
-            <div className="font-mono text-sm text-[#2a2a2a] leading-8 break-all">
+            <div className="font-mono text-sm leading-8 break-all" style={{ color: 'var(--hash-dim)' }}>
               0x5d3a1Bf4A11E5c8e9fC2b7d...
               <br />
               0x8f9e2Cc7B23A6d1f04a8e7c...
               <br />
               0x1a2b3c4d5e6f7a8b9c0d1e2...
             </div>
-            <p className="text-xs text-[#333] mt-4">
+            <p className="text-xs mt-4" style={{ color: 'var(--text-4)' }}>
               Three transfers. No idea who, why, or whether they were compliant.
             </p>
           </div>
 
-          <div className="bg-[#070710] border border-[#18182a] rounded-2xl p-6">
-            <div className="text-xs font-medium text-[#666] uppercase tracking-wider mb-4">
+          <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--bg-accent)', border: '1px solid var(--border-accent)' }}>
+            <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-2)' }}>
               What Radius gives them
             </div>
-            <div className="font-mono text-xs text-[#666] leading-7">
-              <span className="text-[#444]">{'{'}</span>
+            <div className="font-mono text-xs leading-7">
+              <span style={{ color: 'var(--code-punc)' }}>{'{'}</span>
               <br />
-              <span className="pl-4 text-[#c9a87c]">entity</span>
-              <span className="text-[#444]">: </span>
-              <span className="text-[#bbb]">"Acme Inc → Alice Smith"</span>
+              <span className="pl-4" style={{ color: 'var(--code-prop)' }}>entity</span>
+              <span style={{ color: 'var(--code-punc)' }}>: </span>
+              <span style={{ color: 'var(--text-1)' }}>"Acme Inc → Alice Smith"</span>
               <br />
-              <span className="pl-4 text-[#c9a87c]">amount</span>
-              <span className="text-[#444]">: </span>
-              <span className="text-[#bbb]">"$2,500 USDC"</span>
+              <span className="pl-4" style={{ color: 'var(--code-prop)' }}>amount</span>
+              <span style={{ color: 'var(--code-punc)' }}>: </span>
+              <span style={{ color: 'var(--text-1)' }}>"$2,500 USDC"</span>
               <br />
-              <span className="pl-4 text-[#c9a87c]">purpose</span>
-              <span className="text-[#444]">: </span>
-              <span className="text-[#bbb]">"contractor_payout"</span>
+              <span className="pl-4" style={{ color: 'var(--code-prop)' }}>purpose</span>
+              <span style={{ color: 'var(--code-punc)' }}>: </span>
+              <span style={{ color: 'var(--text-1)' }}>"contractor_payout"</span>
               <br />
-              <span className="pl-4 text-[#c9a87c]">sanctions</span>
-              <span className="text-[#444]">: </span>
-              <span className="text-[#7dab7d]">"clear"</span>
+              <span className="pl-4" style={{ color: 'var(--code-prop)' }}>sanctions</span>
+              <span style={{ color: 'var(--code-punc)' }}>: </span>
+              <span style={{ color: 'var(--green)' }}>"clear"</span>
               <br />
-              <span className="pl-4 text-[#c9a87c]">jurisdiction</span>
-              <span className="text-[#444]">: </span>
-              <span className="text-[#bbb]">"US → DE"</span>
+              <span className="pl-4" style={{ color: 'var(--code-prop)' }}>jurisdiction</span>
+              <span style={{ color: 'var(--code-punc)' }}>: </span>
+              <span style={{ color: 'var(--text-1)' }}>"US → DE"</span>
               <br />
-              <span className="text-[#444]">{'}'}</span>
+              <span style={{ color: 'var(--code-punc)' }}>{'}'}</span>
             </div>
-            <p className="text-xs text-[#555] mt-4">Same transfer. Now it's a financial record.</p>
+            <p className="text-xs mt-4" style={{ color: 'var(--text-3)' }}>Same transfer. Now it's a financial record.</p>
           </div>
         </div>
       </div>
@@ -342,13 +439,13 @@ function HowItWorks() {
   ]
 
   return (
-    <section id="how-it-works" className="py-24 px-6 border-t border-[#111]">
+    <section id="how-it-works" className="py-24 px-6" style={{ borderTop: '1px solid var(--border)' }}>
       <div className="max-w-5xl mx-auto">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text-1)' }}>
             Three API calls. Full audit trail.
           </h2>
-          <p className="text-[#666] text-base leading-relaxed">
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-2)' }}>
             Radius sits between your payment logic and the blockchain. You don't
             change how you send. You just check first.
           </p>
@@ -356,18 +453,25 @@ function HowItWorks() {
 
         <div className="space-y-3">
           {steps.map((s) => (
-            <div key={s.n} className="bg-[#080808] border border-[#161616] rounded-2xl p-7 flex flex-col sm:flex-row sm:items-start gap-5">
-              <div className="font-mono text-3xl font-bold text-[#161616] select-none flex-shrink-0 leading-none">
+            <div
+              key={s.n}
+              className="rounded-2xl p-7 flex flex-col sm:flex-row sm:items-start gap-5"
+              style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            >
+              <div className="font-mono text-3xl font-bold select-none flex-shrink-0 leading-none" style={{ color: 'var(--text-5)' }}>
                 {s.n}
               </div>
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <h3 className="text-base font-semibold text-white">{s.title}</h3>
-                  <span className="font-mono text-xs text-[#444] border border-[#181818] bg-[#060606] px-3 py-1 rounded-full">
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--text-1)' }}>{s.title}</h3>
+                  <span
+                    className="font-mono text-xs px-3 py-1 rounded-full"
+                    style={{ color: 'var(--text-3)', backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}
+                  >
                     {s.endpoint}
                   </span>
                 </div>
-                <p className="text-sm text-[#555] leading-relaxed">{s.body}</p>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-3)' }}>{s.body}</p>
               </div>
             </div>
           ))}
@@ -399,13 +503,13 @@ function Features() {
   ]
 
   return (
-    <section id="features" className="py-24 px-6 border-t border-[#111]">
+    <section id="features" className="py-24 px-6" style={{ borderTop: '1px solid var(--border)' }}>
       <div className="max-w-5xl mx-auto">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text-1)' }}>
             What you get
           </h2>
-          <p className="text-[#666] text-base leading-relaxed">
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-2)' }}>
             Sanctions screening, Travel Rule automation, and audit-ready records in a
             single API. No enterprise sales calls. No 6-month integrations.
           </p>
@@ -413,13 +517,17 @@ function Features() {
 
         <div className="grid sm:grid-cols-3 gap-3">
           {features.map((f) => (
-            <div key={f.title} className="bg-[#080808] border border-[#161616] rounded-2xl p-7">
-              <h3 className="text-base font-semibold text-white mb-3">{f.title}</h3>
-              <p className="text-sm text-[#555] leading-relaxed mb-5">{f.body}</p>
+            <div
+              key={f.title}
+              className="rounded-2xl p-7"
+              style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            >
+              <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--text-1)' }}>{f.title}</h3>
+              <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-3)' }}>{f.body}</p>
               <ul className="space-y-2">
                 {f.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-[#444]">
-                    <span className="text-[#333] mt-px flex-shrink-0">-</span>
+                  <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-3)' }}>
+                    <span className="mt-px flex-shrink-0" style={{ color: 'var(--text-4)' }}>-</span>
                     {item}
                   </li>
                 ))}
@@ -482,13 +590,13 @@ function Pricing() {
   ]
 
   return (
-    <section id="pricing" className="py-24 px-6 border-t border-[#111]">
+    <section id="pricing" className="py-24 px-6" style={{ borderTop: '1px solid var(--border)' }}>
       <div className="max-w-5xl mx-auto">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text-1)' }}>
             Pricing
           </h2>
-          <p className="text-[#666] text-base leading-relaxed">
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-2)' }}>
             Usage-based. No seat licenses. No annual commitments on Starter or Growth.
           </p>
         </div>
@@ -497,30 +605,30 @@ function Pricing() {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`flex flex-col rounded-2xl ${
-                plan.highlighted
-                  ? 'bg-[#070710] border border-[#18182a]'
-                  : 'bg-[#080808] border border-[#161616]'
-              }`}
+              className="flex flex-col rounded-2xl"
+              style={{
+                backgroundColor: plan.highlighted ? 'var(--bg-accent)' : 'var(--bg-card)',
+                border: `1px solid ${plan.highlighted ? 'var(--border-accent)' : 'var(--border)'}`,
+              }}
             >
               <div className="p-6 flex-1">
-                <div className="text-sm font-medium text-[#888] mb-4">{plan.name}</div>
+                <div className="text-sm font-medium mb-4" style={{ color: 'var(--text-3)' }}>{plan.name}</div>
                 <div className="mb-1">
-                  <span className="text-3xl font-bold text-white">{plan.price}</span>
+                  <span className="text-3xl font-bold" style={{ color: 'var(--text-1)' }}>{plan.price}</span>
                   {plan.period && (
-                    <span className="text-sm text-[#444]">{plan.period}</span>
+                    <span className="text-sm" style={{ color: 'var(--text-4)' }}>{plan.period}</span>
                   )}
                 </div>
                 {plan.usage ? (
-                  <div className="text-xs text-[#444] mb-5">{plan.usage}</div>
+                  <div className="text-xs mb-5" style={{ color: 'var(--text-4)' }}>{plan.usage}</div>
                 ) : (
                   <div className="mb-5" />
                 )}
-                <p className="text-sm text-[#555] mb-6 leading-relaxed">{plan.description}</p>
+                <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-3)' }}>{plan.description}</p>
                 <ul className="space-y-2.5">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-[#555]">
-                      <span className="text-[#333] mt-px flex-shrink-0">-</span>
+                    <li key={f} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-3)' }}>
+                      <span className="mt-px flex-shrink-0" style={{ color: 'var(--text-4)' }}>-</span>
                       {f}
                     </li>
                   ))}
@@ -529,11 +637,12 @@ function Pricing() {
               <div className="px-6 pb-6">
                 <a
                   href="#waitlist"
-                  className={`block text-center py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  className="block text-center py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={
                     plan.highlighted
-                      ? 'bg-white text-black hover:bg-[#e5e5e5]'
-                      : 'border border-[#222] text-[#888] hover:border-[#444] hover:text-white'
-                  }`}
+                      ? { backgroundColor: 'var(--btn-bg)', color: 'var(--btn-text)' }
+                      : { border: '1px solid var(--outline-border)', color: 'var(--outline-text)' }
+                  }
                 >
                   Join waitlist
                 </a>
@@ -550,13 +659,19 @@ function Pricing() {
 
 function CTA() {
   return (
-    <section className="py-24 px-6 border-t border-[#111]">
+    <section className="py-24 px-6" style={{ borderTop: '1px solid var(--border)' }}>
       <div className="max-w-5xl mx-auto">
-        <div className="bg-[#070710] border border-[#18182a] rounded-3xl p-12 md:p-20 text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
+        <div
+          className="rounded-3xl p-12 md:p-20 text-center"
+          style={{ backgroundColor: 'var(--bg-accent)', border: '1px solid var(--border-accent)' }}
+        >
+          <h2
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 leading-tight"
+            style={{ color: 'var(--text-1)' }}
+          >
             Get early access
           </h2>
-          <p className="text-[#666] text-base mb-8 max-w-md mx-auto leading-relaxed">
+          <p className="text-base mb-8 max-w-md mx-auto leading-relaxed" style={{ color: 'var(--text-2)' }}>
             We're onboarding design partners now. Drop your email and we'll get you set up.
           </p>
           <WaitlistForm center />
@@ -570,25 +685,25 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-[#111] py-12 px-6">
+    <footer className="py-12 px-6" style={{ borderTop: '1px solid var(--border)' }}>
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-4 h-4 rounded-full bg-[#7c3aed]" />
-            <span className="font-semibold text-white text-sm">Radius</span>
+            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+            <span className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>Radius</span>
           </div>
-          <p className="text-xs text-[#333] leading-relaxed">
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-4)' }}>
             Payment attestation infrastructure<br />for stablecoin transfers.
           </p>
         </div>
-        <div className="flex items-center gap-6 text-sm text-[#444]">
-          <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-          <a href="mailto:hello@getradius.com" className="hover:text-white transition-colors">Contact</a>
+        <div className="flex items-center gap-6 text-sm" style={{ color: 'var(--text-3)' }}>
+          <a href="#how-it-works" className="hover:opacity-70 transition-opacity">How it works</a>
+          <a href="#pricing" className="hover:opacity-70 transition-opacity">Pricing</a>
+          <a href="mailto:hello@getradius.com" className="hover:opacity-70 transition-opacity">Contact</a>
         </div>
       </div>
-      <div className="max-w-5xl mx-auto mt-8 pt-6 border-t border-[#111]">
-        <p className="text-xs text-[#222]">&copy; 2026 Radius.</p>
+      <div className="max-w-5xl mx-auto mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+        <p className="text-xs" style={{ color: 'var(--text-5)' }}>&copy; 2026 Radius.</p>
       </div>
     </footer>
   )
@@ -597,9 +712,11 @@ function Footer() {
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [dark, toggleTheme] = useTheme()
+
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Nav />
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)', color: 'var(--text-1)' }}>
+      <Nav dark={dark} toggleTheme={toggleTheme} />
       <main>
         <Hero />
         <Stats />
