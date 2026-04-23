@@ -342,6 +342,26 @@ def _auth_from_clerk_token(token: str, db: Session) -> AuthInfo:
     )
 
 
+def _fetch_clerk_user(clerk_user_id: str) -> Optional[dict]:
+    """Fetch user details from Clerk Backend API."""
+    import requests
+    from app.core.config import settings
+
+    if not settings.clerk_secret_key:
+        return None
+    try:
+        resp = requests.get(
+            f"https://api.clerk.com/v1/users/{clerk_user_id}",
+            headers={"Authorization": f"Bearer {settings.clerk_secret_key}"},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            return resp.json()
+    except requests.RequestException:
+        pass
+    return None
+
+
 def _auto_provision_user(claims: dict, clerk_user_id: str, db: Session):
     """
     Auto-provision a User record on first Clerk login.
@@ -351,13 +371,21 @@ def _auto_provision_user(claims: dict, clerk_user_id: str, db: Session):
     """
     from app.db.repositories import BusinessRepository, UserRepository
 
-    # Clerk stores email in different claim locations depending on config
-    email = (
-        claims.get("email")
-        or claims.get("email_addresses", [{}])[0].get("email_address", "")
-        if isinstance(claims.get("email_addresses"), list) and claims.get("email_addresses")
-        else claims.get("email", "")
-    )
+    # Try JWT claims first, then fall back to Clerk Backend API
+    email = claims.get("email") or ""
+
+    if not email:
+        # Clerk JWTs don't include email by default — fetch from Backend API
+        clerk_user = _fetch_clerk_user(clerk_user_id)
+        if clerk_user:
+            addrs = clerk_user.get("email_addresses", [])
+            primary_id = clerk_user.get("primary_email_address_id")
+            for addr in addrs:
+                if addr.get("id") == primary_id:
+                    email = addr.get("email_address", "")
+                    break
+            if not email and addrs:
+                email = addrs[0].get("email_address", "")
 
     if not email:
         raise HTTPException(

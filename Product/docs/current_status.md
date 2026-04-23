@@ -124,7 +124,7 @@
   The fundamental gap: Radius is entirely pull-based.
   Someone must call POST /v1/transactions/ingest for every
   transaction. There's no:
-   1. Exchange/wallet connectors — No Coinbase, Circle, Fireblocks, or any
+  1. Exchange/wallet connectors — No Coinbase, Circle, Fireblocks, or any
   other integration. You'd need OAuth flows + polling/webhook listeners for
   each provider's API to auto-discover transactions.
   2. Blockchain indexing — No on-chain monitoring. Radius can't watch a
@@ -136,3 +136,30 @@
   periodic polling, retry logic, or async processing.
   5. Reconciliation engine — The annotate endpoint exists but there's no
   automatic matching of on-chain txs to previously ingested records.
+
+  Two Paths to "Background Mode"
+
+  ┌───────────┬────────┬───────────────────────────────────────────────┐
+  │ Approach  │ Effort │                 How it works                  │
+  ├───────────┼────────┼───────────────────────────────────────────────┤
+  │           │        │ User configures Coinbase/Circle to send       │
+  │ Webhook   │ ~2-4   │ webhooks to Radius. Radius parses them and    │
+  │ listener  │ weeks  │ auto-ingests. Requires one connector per      │
+  │           │        │ provider.                                     │
+  ├───────────┼────────┼───────────────────────────────────────────────┤
+  │           │        │ User registers wallet addresses. Radius       │
+  │ Wallet    │ ~4-8   │ subscribes to on-chain events (via            │
+  │ monitor   │ weeks  │ Alchemy/Moralis) and ingests automatically.   │
+  │           │        │ Provider-agnostic but more complex.           │
+  └───────────┴────────┴───────────────────────────────────────────────┘
+
+  Bottom Line
+
+  The compliance engine works. But the "hook it up and forget about it"
+  experience requires an entirely new ingestion layer that doesn't exist
+  yet. Right now it's more like a compliance API that a developer integrates
+   into their existing payment flow — not a turnkey background service.
+
+  The quickest path to "plug-and-play" would be building 1-2 exchange
+  connectors (Coinbase + Circle cover most use cases) that poll transaction
+  history on a schedule and auto-ingest into the existing pipeline.

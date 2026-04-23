@@ -8,8 +8,14 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Get backend directory (one level up from app/)
 BACKEND_DIR = Path(__file__).parent.parent.parent
+
+# Load .env before reading any env vars
+load_dotenv()
+load_dotenv(BACKEND_DIR.parent / ".env")  # root .env when running from backend/
 DEFAULT_DB_PATH = BACKEND_DIR / "radius_dev.db"
 DEFAULT_OFAC_DATA_DIR = BACKEND_DIR / "data" / "ofac"
 
