@@ -2,44 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Theme Variables ─────────────────────────────────────────────────────── */
+
+:root {
+  /* Surfaces */
+  --bg: #ffffff;
+  --bg-card: #f9f9f9;
+  --bg-accent: #f5f3ff;
+  --bg-code: #f6f6f6;
+  --bg-input: #f3f3f3;
+  --bg-nav: rgba(255, 255, 255, 0.92);
+
+  /* Borders */
+  --border: #e8e8e8;
+  --border-accent: #e0ddf0;
+
+  /* Text */
+  --text-1: #111111;
+  --text-2: #555555;
+  --text-3: #888888;
+  --text-4: #bbbbbb;
+  --text-5: #dddddd;
+
+  /* Code */
+  --code-kw: #5b5fc7;
+  --code-str: #1a7f37;
+  --code-prop: #953800;
+  --code-cmt: #8b949e;
+  --code-punc: #999999;
+
+  /* UI */
+  --btn-bg: #111111;
+  --btn-text: #ffffff;
+  --btn-hover: #333333;
+  --outline-border: #dddddd;
+  --outline-text: #666666;
+
+  /* Accents */
+  --accent: #7c3aed;
+  --green: #16a34a;
+  --hash-dim: #cccccc;
+  --dot: #dddddd;
+}
+
+.dark {
+  --bg: #000000;
+  --bg-card: #080808;
+  --bg-accent: #070710;
+  --bg-code: #080808;
+  --bg-input: #0a0a0a;
+  --bg-nav: rgba(0, 0, 0, 0.92);
+
+  --border: #161616;
+  --border-accent: #18182a;
+
+  --text-1: #ffffff;
+  --text-2: #777777;
+  --text-3: #555555;
+  --text-4: #444444;
+  --text-5: #2a2a2a;
+
+  --code-kw: #8b9dc3;
+  --code-str: #a5c5a0;
+  --code-prop: #c9a87c;
+  --code-cmt: #444444;
+  --code-punc: #555555;
+
+  --btn-bg: #ffffff;
+  --btn-text: #000000;
+  --btn-hover: #e5e5e5;
+  --outline-border: #222222;
+  --outline-text: #888888;
+
+  --accent: #7c3aed;
+  --green: #7dab7d;
+  --hash-dim: #2a2a2a;
+  --dot: #1a1a1a;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
 
   body {
-    background-color: #000;
-    color: #fff;
+    background-color: var(--bg);
+    color: var(--text-1);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s, color 0.2s;
   }
 
   ::-webkit-scrollbar {
     width: 5px;
   }
   ::-webkit-scrollbar-track {
-    background: #000;
+    background: var(--bg);
   }
   ::-webkit-scrollbar-thumb {
-    background: #222;
+    background: var(--border);
     border-radius: 3px;
   }
-}
-
-@layer components {
-  .card {
-    @apply bg-[#0c0c0c] border border-[#1c1c1c] rounded-2xl;
-  }
-}
-
-/* Radar sweep animation */
-@keyframes radar-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-.radar-sweep {
-  animation: radar-spin 6s linear infinite;
-  transform-origin: 50% 50%;
 }
