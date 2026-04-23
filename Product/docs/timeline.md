@@ -343,10 +343,12 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
 > writing HTTP calls from scratch. SDKs are a multiplier on customers you already have.
 > Build only after the API is stable — changing an endpoint after publishing breaks SDK consumers.
 
-- [ ] **Python SDK** (`radius-python`)
-  - Typed models matching API schemas
-  - Methods: `client.check(transaction)`, `client.annotate(tx_id, tx_hash)`, `client.audit(tx_id)`
-  - Typed exceptions: `SanctionsError`, `RateLimitError`, `AuthError`
+- [x] **Python SDK** (`getradius`)
+  - `Product/sdks/python/` — `pip install getradius`, single dep: `requests>=2.28`
+  - Resource-based client: `client.transactions.ingest()`, `.payments.annotate()`, `.wallets.verify()`, `.travel_rule.check()`, `.reports.export_json()`
+  - Stdlib dataclass models: Entity, IngestResponse, AuditRecord, etc.
+  - Typed exception hierarchy: RadiusError → BadRequestError, AuthenticationError, NotFoundError, RateLimitError, ServerError
+  - `User-Agent: getradius-python/0.1.0` on all requests
   - Publish to PyPI
 
 - [ ] **TypeScript SDK** (`@radius/sdk`)
