@@ -14,8 +14,8 @@
   --bg-nav: rgba(255, 255, 255, 0.92);
 
   /* Borders */
-  --border: #e8e8e8;
-  --border-accent: #e0ddf0;
+  --border: #d0d0d0;
+  --border-accent: #c8c5e0;
 
   /* Text */
   --text-1: #111111;
@@ -35,7 +35,7 @@
   --btn-bg: #111111;
   --btn-text: #ffffff;
   --btn-hover: #333333;
-  --outline-border: #dddddd;
+  --outline-border: #c0c0c0;
   --outline-text: #666666;
 
   /* Accents */
@@ -53,8 +53,8 @@
   --bg-input: #0a0a0a;
   --bg-nav: rgba(0, 0, 0, 0.92);
 
-  --border: #161616;
-  --border-accent: #18182a;
+  --border: #2a2a2a;
+  --border-accent: #2a2a3a;
 
   --text-1: #ffffff;
   --text-2: #777777;
@@ -71,12 +71,12 @@
   --btn-bg: #ffffff;
   --btn-text: #000000;
   --btn-hover: #e5e5e5;
-  --outline-border: #222222;
+  --outline-border: #333333;
   --outline-text: #888888;
 
   --accent: #7c3aed;
   --green: #7dab7d;
-  --hash-dim: #2a2a2a;
+  --hash-dim: #555555;
   --dot: #1a1a1a;
 }
 
