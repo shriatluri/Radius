@@ -1,0 +1,26 @@
+{
+  "name": "@getradius/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Radius — payment attestation infrastructure for stablecoin transfers.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["radius", "stablecoin", "compliance", "payments", "attestation"],
+  "author": "Radius <hello@getradius.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getradius/getradius-ts"
+  },
+  "homepage": "https://getradius.com",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4"
+  }
+}

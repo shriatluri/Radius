@@ -351,10 +351,12 @@ Each task has a checkbox. Check it off when done. Subtasks are the actual coding
   - `User-Agent: getradius-python/0.1.0` on all requests
   - Publish to PyPI
 
-- [ ] **TypeScript SDK** (`@radius/sdk`)
-  - TypeScript types matching API schemas
-  - Same method signatures as Python SDK
-  - Works in Node.js and browser environments
+- [x] **TypeScript SDK** (`@getradius/sdk`)
+  - `Product/sdks/typescript/` — `npm install @getradius/sdk`, zero runtime deps (native `fetch`)
+  - Resource-based client: `client.transactions.ingest()`, `.payments.annotate()`, `.wallets.verify()`, `.travelRule.check()`, `.reports.exportJson()`
+  - Full TypeScript interfaces for all API responses
+  - Typed exception hierarchy matching Python SDK
+  - `User-Agent: getradius-ts/0.1.0` on all requests; Node.js >= 18
   - Publish to npm
 
 ### 3.5 Landing Page
