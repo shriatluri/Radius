@@ -30,55 +30,132 @@ const Moon = () => (
   </svg>
 )
 
-// ─── Waitlist Form ───────────────────────────────────────────────────────────
+// ─── Signup Form ─────────────────────────────────────────────────────────────
 
-function WaitlistForm({ center = false }) {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+function SignupForm({ center = false }) {
   const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const [company, setCompany] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [copied, setCopied] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (email) setSubmitted(true)
+    if (!email || !company) return
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch(`${API_URL}/v1/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ business_name: company, email }),
+      })
+
+      if (res.status === 409) {
+        setError('An account already exists for this email.')
+        setLoading(false)
+        return
+      }
+      if (!res.ok) {
+        setError('Something went wrong. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const data = await res.json()
+      setApiKey(data.api_key)
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (submitted) {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(apiKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (apiKey) {
     return (
-      <p className={`text-sm ${center ? 'text-center' : ''}`} style={{ color: 'var(--text-3)' }}>
-        You're on the list. We'll reach out to{' '}
-        <span style={{ color: 'var(--text-1)' }}>{email}</span>.
-      </p>
+      <div className={`max-w-md ${center ? 'mx-auto text-center' : ''}`}>
+        <p className="text-sm font-medium mb-2" style={{ color: 'var(--text-1)' }}>
+          Your API key
+        </p>
+        <div
+          className="flex items-center gap-2 rounded-lg px-4 py-2.5 font-mono text-sm mb-2"
+          style={{ backgroundColor: 'var(--bg-code)', border: '1px solid var(--border)' }}
+        >
+          <span className="flex-1 truncate text-left" style={{ color: 'var(--text-1)' }}>{apiKey}</span>
+          <button
+            onClick={handleCopy}
+            className="flex-shrink-0 text-xs px-3 py-1 rounded-md font-medium transition-colors"
+            style={{ backgroundColor: 'var(--btn-bg)', color: 'var(--btn-text)' }}
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-4)' }}>
+          Save this key now — it won't be shown again.
+        </p>
+      </div>
     )
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`flex flex-col sm:flex-row gap-3 ${center ? 'max-w-md mx-auto' : 'max-w-md'}`}
-    >
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@company.com"
-        required
-        className="flex-1 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors"
-        style={{
-          backgroundColor: 'var(--bg-input)',
-          border: '1px solid var(--border)',
-          color: 'var(--text-1)',
-        }}
-      />
-      <button
-        type="submit"
-        className="px-6 py-2.5 rounded-lg font-medium text-sm transition-colors whitespace-nowrap"
-        style={{
-          backgroundColor: 'var(--btn-bg)',
-          color: 'var(--btn-text)',
-        }}
-      >
-        Join waitlist
-      </button>
-    </form>
+    <div className={center ? 'max-w-md mx-auto' : 'max-w-md'}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            placeholder="Company name"
+            required
+            className="flex-1 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-1)',
+            }}
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            required
+            className="flex-1 rounded-lg px-4 py-2.5 text-sm focus:outline-none transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-1)',
+            }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-2.5 rounded-lg font-medium text-sm transition-colors whitespace-nowrap disabled:opacity-60"
+          style={{
+            backgroundColor: 'var(--btn-bg)',
+            color: 'var(--btn-text)',
+          }}
+        >
+          {loading ? 'Creating account…' : 'Get API Key'}
+        </button>
+      </form>
+      {error && (
+        <p className={`text-sm mt-3 ${center ? 'text-center' : ''}`} style={{ color: '#ef4444' }}>
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -104,6 +181,7 @@ function Nav({ dark, toggleTheme }) {
           <a href="#how-it-works" className="hover:opacity-80 transition-opacity">How it works</a>
           <a href="#features" className="hover:opacity-80 transition-opacity">Features</a>
           <a href="#pricing" className="hover:opacity-80 transition-opacity">Pricing</a>
+          <a href="/docs" className="hover:opacity-80 transition-opacity">Docs</a>
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -120,7 +198,7 @@ function Nav({ dark, toggleTheme }) {
             className="text-sm px-4 py-1.5 rounded-lg font-medium transition-colors"
             style={{ backgroundColor: 'var(--btn-bg)', color: 'var(--btn-text)' }}
           >
-            Join the waitlist
+            Get API Key
           </a>
         </div>
 
@@ -155,13 +233,14 @@ function Nav({ dark, toggleTheme }) {
           <a href="#how-it-works" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>How it works</a>
           <a href="#features" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>Features</a>
           <a href="#pricing" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>Pricing</a>
+          <a href="/docs" onClick={() => setOpen(false)} className="hover:opacity-80" style={{ color: 'var(--text-3)' }}>Docs</a>
           <a
             href="#waitlist"
             onClick={() => setOpen(false)}
             className="px-4 py-2 rounded-lg font-medium text-center mt-2"
             style={{ backgroundColor: 'var(--btn-bg)', color: 'var(--btn-text)' }}
           >
-            Join the waitlist
+            Get API Key
           </a>
         </div>
       )}
@@ -203,9 +282,9 @@ function Hero() {
         </p>
 
         <div id="waitlist" className="mb-20">
-          <WaitlistForm center />
+          <SignupForm center />
           <p className="text-xs mt-3" style={{ color: 'var(--text-4)' }}>
-            Early access opening soon.
+            Free sandbox — no credit card required.
           </p>
         </div>
 
@@ -540,6 +619,163 @@ function Features() {
   )
 }
 
+// ─── SDKs ───────────────────────────────────────────────────────────────────
+
+function SDKs() {
+  return (
+    <section id="sdks" className="py-24 px-6" style={{ borderTop: '1px solid var(--border)' }}>
+      <div className="max-w-5xl mx-auto">
+        <div className="max-w-2xl mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text-1)' }}>
+            Install and ship in minutes
+          </h2>
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-2)' }}>
+            Native SDKs for Python and TypeScript. Install, configure, and start screening transactions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div
+            className="rounded-2xl overflow-hidden text-left"
+            style={{ backgroundColor: 'var(--bg-code)', border: '1px solid var(--border)' }}
+          >
+            <div
+              className="flex items-center gap-1.5 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <span className="ml-3 text-xs font-mono" style={{ color: 'var(--text-4)' }}>Python</span>
+            </div>
+            <div className="p-5 font-mono text-[13px] leading-7 overflow-x-auto">
+              <div style={{ color: 'var(--code-cmt)' }}># pip install getradius</div>
+              <div>&nbsp;</div>
+              <div>
+                <span style={{ color: 'var(--code-kw)' }}>from </span>
+                <span style={{ color: 'var(--text-1)' }}>radius </span>
+                <span style={{ color: 'var(--code-kw)' }}>import </span>
+                <span style={{ color: 'var(--text-1)' }}>Radius</span>
+              </div>
+              <div>&nbsp;</div>
+              <div>
+                <span style={{ color: 'var(--text-1)' }}>client</span>
+                <span style={{ color: 'var(--code-punc)' }}> = </span>
+                <span style={{ color: 'var(--text-1)' }}>Radius</span>
+                <span style={{ color: 'var(--code-punc)' }}>(</span>
+                <span style={{ color: 'var(--code-prop)' }}>api_key</span>
+                <span style={{ color: 'var(--code-punc)' }}>=</span>
+                <span style={{ color: 'var(--code-str)' }}>"sk_sandbox_..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>)</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-1)' }}>result</span>
+                <span style={{ color: 'var(--code-punc)' }}> = </span>
+                <span style={{ color: 'var(--text-1)' }}>client</span>
+                <span style={{ color: 'var(--code-punc)' }}>.</span>
+                <span style={{ color: 'var(--text-1)' }}>transactions</span>
+                <span style={{ color: 'var(--code-punc)' }}>.</span>
+                <span style={{ color: 'var(--text-1)' }}>check</span>
+                <span style={{ color: 'var(--code-punc)' }}>(</span>
+              </div>
+              <div className="pl-5">
+                <span style={{ color: 'var(--code-prop)' }}>sender</span>
+                <span style={{ color: 'var(--code-punc)' }}>=</span>
+                <span style={{ color: 'var(--code-str)' }}>"0x742d..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
+              </div>
+              <div className="pl-5">
+                <span style={{ color: 'var(--code-prop)' }}>receiver</span>
+                <span style={{ color: 'var(--code-punc)' }}>=</span>
+                <span style={{ color: 'var(--code-str)' }}>"0x3fC9..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
+              </div>
+              <div className="pl-5">
+                <span style={{ color: 'var(--code-prop)' }}>amount</span>
+                <span style={{ color: 'var(--code-punc)' }}>=</span>
+                <span style={{ color: 'var(--code-str)' }}>"2500.00"</span>
+              </div>
+              <div><span style={{ color: 'var(--code-punc)' }}>)</span></div>
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl overflow-hidden text-left"
+            style={{ backgroundColor: 'var(--bg-code)', border: '1px solid var(--border)' }}
+          >
+            <div
+              className="flex items-center gap-1.5 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--dot)' }} />
+              <span className="ml-3 text-xs font-mono" style={{ color: 'var(--text-4)' }}>TypeScript</span>
+            </div>
+            <div className="p-5 font-mono text-[13px] leading-7 overflow-x-auto">
+              <div style={{ color: 'var(--code-cmt)' }}>// npm install @getradius/sdk</div>
+              <div>&nbsp;</div>
+              <div>
+                <span style={{ color: 'var(--code-kw)' }}>import </span>
+                <span style={{ color: 'var(--code-punc)' }}>{'{ '}</span>
+                <span style={{ color: 'var(--text-1)' }}>Radius</span>
+                <span style={{ color: 'var(--code-punc)' }}>{' }'}</span>
+                <span style={{ color: 'var(--code-kw)' }}> from </span>
+                <span style={{ color: 'var(--code-str)' }}>"@getradius/sdk"</span>
+              </div>
+              <div>&nbsp;</div>
+              <div>
+                <span style={{ color: 'var(--code-kw)' }}>const </span>
+                <span style={{ color: 'var(--text-1)' }}>radius</span>
+                <span style={{ color: 'var(--code-punc)' }}> = </span>
+                <span style={{ color: 'var(--code-kw)' }}>new </span>
+                <span style={{ color: 'var(--text-1)' }}>Radius</span>
+                <span style={{ color: 'var(--code-punc)' }}>(</span>
+                <span style={{ color: 'var(--code-str)' }}>"sk_sandbox_..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>)</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--code-kw)' }}>const </span>
+                <span style={{ color: 'var(--text-1)' }}>result</span>
+                <span style={{ color: 'var(--code-punc)' }}> = </span>
+                <span style={{ color: 'var(--code-kw)' }}>await </span>
+                <span style={{ color: 'var(--text-1)' }}>radius</span>
+                <span style={{ color: 'var(--code-punc)' }}>.</span>
+                <span style={{ color: 'var(--text-1)' }}>transactions</span>
+                <span style={{ color: 'var(--code-punc)' }}>.</span>
+                <span style={{ color: 'var(--text-1)' }}>check</span>
+                <span style={{ color: 'var(--code-punc)' }}>(</span>
+                <span style={{ color: 'var(--code-punc)' }}>{'{'}</span>
+              </div>
+              <div className="pl-5">
+                <span style={{ color: 'var(--code-prop)' }}>sender</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"0x742d..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
+              </div>
+              <div className="pl-5">
+                <span style={{ color: 'var(--code-prop)' }}>receiver</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"0x3fC9..."</span>
+                <span style={{ color: 'var(--code-punc)' }}>,</span>
+              </div>
+              <div className="pl-5">
+                <span style={{ color: 'var(--code-prop)' }}>amount</span>
+                <span style={{ color: 'var(--code-punc)' }}>: </span>
+                <span style={{ color: 'var(--code-str)' }}>"2500.00"</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--code-punc)' }}>{'}'}</span>
+                <span style={{ color: 'var(--code-punc)' }}>)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── Pricing ─────────────────────────────────────────────────────────────────
 
 function Pricing() {
@@ -644,7 +880,7 @@ function Pricing() {
                       : { border: '1px solid var(--outline-border)', color: 'var(--outline-text)' }
                   }
                 >
-                  Join waitlist
+                  Get started
                 </a>
               </div>
             </div>
@@ -669,12 +905,12 @@ function CTA() {
             className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 leading-tight"
             style={{ color: 'var(--text-1)' }}
           >
-            Get early access
+            Start building
           </h2>
           <p className="text-base mb-8 max-w-md mx-auto leading-relaxed" style={{ color: 'var(--text-2)' }}>
-            We're onboarding design partners now. Drop your email and we'll get you set up.
+            Get your API key and start screening transactions in minutes. Free sandbox included.
           </p>
-          <WaitlistForm center />
+          <SignupForm center />
         </div>
       </div>
     </section>
@@ -699,6 +935,7 @@ function Footer() {
         <div className="flex items-center gap-6 text-sm" style={{ color: 'var(--text-3)' }}>
           <a href="#how-it-works" className="hover:opacity-70 transition-opacity">How it works</a>
           <a href="#pricing" className="hover:opacity-70 transition-opacity">Pricing</a>
+          <a href="/docs" className="hover:opacity-70 transition-opacity">Docs</a>
           <a href="mailto:hello@getradius.com" className="hover:opacity-70 transition-opacity">Contact</a>
         </div>
       </div>
@@ -723,6 +960,7 @@ export default function App() {
         <BeforeAfter />
         <HowItWorks />
         <Features />
+        <SDKs />
         <Pricing />
         <CTA />
       </main>
